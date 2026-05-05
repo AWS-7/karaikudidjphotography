@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Images, Loader2 } from 'lucide-react';
+import { ArrowRight, Images, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
 import { useEvents } from '../hooks/useEvents';
 
 const categories = ['All', 'Wedding', 'Pre-Wedding', 'Engagement', 'Reception', 'Ceremony', 'Event'];
@@ -11,7 +11,7 @@ export default function GallerySection() {
   const inView = useInView(ref, { once: true, margin: '-80px' });
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState('All');
-  const { events, loading, error } = useEvents();
+  const { events, loading, error, refetch } = useEvents();
 
   const filtered = activeCategory === 'All'
     ? events
@@ -70,8 +70,21 @@ export default function GallerySection() {
 
         {/* Error State */}
         {error && (
-          <div className="text-center py-12">
-            <p className="font-sans text-red-500">Failed to load events. Please try again.</p>
+          <div className="text-center py-16">
+            <div className="bg-white rounded-2xl p-8 shadow-lg border border-red-100 max-w-md mx-auto">
+              <AlertCircle size={48} className="text-red-400 mx-auto mb-4" />
+              <h3 className="font-serif text-xl text-stone-800 mb-2">Failed to Load Gallery</h3>
+              <p className="font-sans text-stone-500 text-sm mb-6">
+                Unable to connect to the server. Please check your connection and try again.
+              </p>
+              <button
+                onClick={refetch}
+                className="inline-flex items-center gap-2 px-6 py-2.5 bg-gold-500 text-white font-sans text-sm font-medium tracking-wide rounded-full hover:bg-gold-600 transition-colors"
+              >
+                <RefreshCw size={16} />
+                Try Again
+              </button>
+            </div>
           </div>
         )}
 

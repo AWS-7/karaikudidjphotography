@@ -54,19 +54,19 @@ export default function Services() {
               )}
 
               {/* Header */}
-              <div className={`p-8 bg-gradient-to-br ${pkg.accentColor} text-white`}>
+              <div className={`p-6 sm:p-8 bg-gradient-to-br ${pkg.accentColor} text-white`}>
                 <p className="font-sans text-xs tracking-[0.3em] uppercase font-medium mb-2 opacity-80">
                   Package
                 </p>
-                <h3 className="font-serif text-4xl font-light mb-4">{pkg.name}</h3>
+                <h3 className="font-serif text-3xl sm:text-4xl font-light mb-2 sm:mb-4">{pkg.name}</h3>
                 <div className="flex items-end gap-1">
-                  <span className="font-serif text-3xl font-medium">{pkg.price}</span>
+                  <span className="font-serif text-2xl sm:text-3xl font-medium">{pkg.price}</span>
                 </div>
                 <p className="font-sans text-xs opacity-70 mt-1 tracking-wide">{pkg.priceNote}</p>
               </div>
 
               {/* Features */}
-              <div className={`p-6 flex flex-col gap-3 ${pkg.popular ? 'bg-cream-50' : 'bg-white'}`}>
+              <div className={`p-4 sm:p-6 flex flex-col gap-2 sm:gap-3 ${pkg.popular ? 'bg-cream-50' : 'bg-white'}`}>
                 {pkg.features.map((feature) => (
                   <div key={feature.text} className="flex items-center gap-3">
                     {feature.included ? (
@@ -78,7 +78,7 @@ export default function Services() {
                         <X size={11} className="text-stone-300" strokeWidth={3} />
                       </div>
                     )}
-                    <span className={`font-sans text-sm ${feature.included ? 'text-stone-700' : 'text-stone-300'}`}>
+                    <span className={`font-sans text-xs sm:text-sm ${feature.included ? 'text-stone-700' : 'text-stone-300'}`}>
                       {feature.text}
                     </span>
                   </div>
@@ -88,7 +88,7 @@ export default function Services() {
                   href={`https://wa.me/918825605403?text=Hi%20Dass!%20I'm%20interested%20in%20the%20${pkg.name}%20package%20(${pkg.price}).`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-lg font-sans text-sm font-medium tracking-widest uppercase transition-all duration-300 ${
+                  className={`mt-3 sm:mt-4 w-full flex items-center justify-center gap-2 py-2.5 sm:py-3 rounded-lg font-sans text-sm font-medium tracking-widest uppercase transition-all duration-300 ${
                     pkg.popular
                       ? 'bg-gradient-to-r from-gold-600 to-gold-500 text-white hover:shadow-lg hover:shadow-gold-500/30 hover:scale-105'
                       : 'border border-gold-400 text-gold-600 hover:bg-gold-500 hover:text-white hover:scale-105'
