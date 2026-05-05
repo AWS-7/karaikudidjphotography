@@ -126,7 +126,7 @@ export default function About() {
           {stats.map((stat) => (
             <div
               key={stat.label}
-              className="text-center p-4 sm:p-6 bg-white rounded-xl shadow-sm border border-cream-200 hover:shadow-md hover:border-gold-200 transition-all duration-300 group
+              className="text-center p-4 sm:p-6 bg-white rounded-xl shadow-sm border border-cream-200 hover:shadow-md hover:border-gold-200 transition-all duration-300 group"
             >
               <div className="w-12 h-12 bg-cream-100 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-gold-50 transition-colors">
                 <stat.icon size={22} className="text-gold-600" />
