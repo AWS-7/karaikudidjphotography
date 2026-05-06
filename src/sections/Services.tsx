@@ -1,102 +1,165 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
-import { Check, X, MessageCircle } from 'lucide-react';
+import { Check, ArrowRight, X } from 'lucide-react';
 import { packages } from '../data/packages';
+import img1 from '../images/1778054327731.jpg';
+import img2 from '../images/1778054327722.jpg';
+import img3 from '../images/1778054327710.jpg';
+import img4 from '../images/1778054327688.jpg';
+import img5 from '../images/1778054327700.jpg';
+
+const packageImages = [img1, img2, img3, img4];
 
 export default function Services() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '-80px' });
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   return (
-    <section id="services" className="py-24 bg-white" ref={ref}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="services" className="py-20 sm:py-28 bg-stone-50 relative overflow-hidden" ref={ref}>
+      {/* Background decorative image */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.03]">
+        <img src={img5} alt="" className="w-full h-full object-cover" />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.7 }}
-          className="text-center mb-16"
+          className="text-center mb-14 sm:mb-20"
         >
-          <span className="section-heading">Packages</span>
-          <h2 className="section-title">
-            Photography <span className="italic text-gold-600">Packages</span>
-          </h2>
-          <span className="gold-divider" />
-          <p className="font-sans text-stone-500 mt-6 max-w-xl mx-auto text-base">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ delay: 0.1, duration: 0.6 }}
+            className="inline-flex items-center gap-3 mb-4"
+          >
+            <span className="h-px w-12 bg-gold-400" />
+            <span className="font-sans text-gold-600 text-xs tracking-[0.3em] uppercase font-semibold">
+              Our Pricing
+            </span>
+            <span className="h-px w-12 bg-gold-400" />
+          </motion.div>
+
+          <motion.h2
+            initial={{ opacity: 0, y: 30 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ delay: 0.2, duration: 0.8 }}
+            className="font-serif text-4xl sm:text-5xl md:text-6xl font-light text-stone-800 leading-tight"
+          >
+            Photography{' '}
+            <span className="relative inline-block">
+              <span className="italic text-gold-600">Packages</span>
+              <motion.span
+                initial={{ scaleX: 0 }}
+                animate={inView ? { scaleX: 1 } : {}}
+                transition={{ delay: 0.6, duration: 0.6 }}
+                className="absolute -bottom-1 left-0 right-0 h-1 bg-gold-300 origin-left rounded-full"
+              />
+            </span>
+          </motion.h2>
+
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={inView ? { opacity: 1 } : {}}
+            transition={{ delay: 0.4, duration: 0.6 }}
+            className="font-sans text-stone-500 mt-6 max-w-xl mx-auto text-base leading-relaxed"
+          >
             Choose a package that fits your vision. Every package includes our signature
             candid storytelling style and full post-processing.
-          </p>
+          </motion.p>
         </motion.div>
 
-        {/* Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+        {/* Image Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
           {packages.map((pkg, i) => (
             <motion.div
               key={pkg.id}
               initial={{ opacity: 0, y: 50 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.6, delay: i * 0.12 }}
-              className={`relative rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl group ${
-                pkg.popular
-                  ? 'ring-2 ring-gold-500 shadow-2xl shadow-gold-500/20 scale-[1.03]'
-                  : 'bg-white border border-cream-200 shadow-md'
-              }`}
+              className="relative group"
+              onMouseEnter={() => setHoveredIndex(i)}
+              onMouseLeave={() => setHoveredIndex(null)}
             >
-              {/* Popular ribbon */}
-              {pkg.badge && (
-                <div className={`absolute top-4 right-0 z-10 px-4 py-1 text-xs font-sans font-medium tracking-widest uppercase text-white rounded-l-full ${
-                  pkg.popular
-                    ? 'bg-gradient-to-r from-gold-600 to-gold-500'
-                    : 'bg-gradient-to-r from-cyan-500 to-blue-500'
-                }`}>
-                  {pkg.badge}
-                </div>
-              )}
+              <div className={`relative rounded-2xl overflow-hidden shadow-xl transition-all duration-500 ${
+                pkg.popular ? 'lg:-translate-y-3 shadow-2xl' : 'hover:-translate-y-2 hover:shadow-2xl'
+              }`}>
+                {/* Image */}
+                <div className="relative h-[420px] sm:h-[480px] overflow-hidden">
+                  <img
+                    src={packageImages[i]}
+                    alt={`${pkg.name} Package`}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                  
+                  {/* Gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                  
+                  {/* Popular badge */}
+                  {pkg.popular && (
+                    <div className="absolute top-4 left-4 bg-gold-500 text-white px-4 py-1.5 rounded-full text-xs font-sans font-semibold tracking-widest uppercase shadow-lg z-10">
+                      Most Popular
+                    </div>
+                  )}
 
-              {/* Header */}
-              <div className={`p-6 sm:p-8 bg-gradient-to-br ${pkg.accentColor} text-white`}>
-                <p className="font-sans text-xs tracking-[0.3em] uppercase font-medium mb-2 opacity-80">
-                  Package
-                </p>
-                <h3 className="font-serif text-3xl sm:text-4xl font-light mb-2 sm:mb-4">{pkg.name}</h3>
-                <div className="flex items-end gap-1">
-                  <span className="font-serif text-2xl sm:text-3xl font-medium">{pkg.price}</span>
-                </div>
-                <p className="font-sans text-xs opacity-70 mt-1 tracking-wide">{pkg.priceNote}</p>
-              </div>
+                  {/* Content overlay */}
+                  <div className="absolute inset-0 flex flex-col justify-end p-6 sm:p-8">
+                    {/* Package name & price - always visible */}
+                    <div className="transform transition-transform duration-500 group-hover:-translate-y-2">
+                      <p className="font-sans text-white/60 text-xs tracking-[0.2em] uppercase mb-1">
+                        Package
+                      </p>
+                      <h3 className="font-serif text-3xl sm:text-4xl font-light text-white mb-2">
+                        {pkg.name}
+                      </h3>
+                      <div className="flex items-baseline gap-1">
+                        <span className="font-serif text-3xl sm:text-4xl font-light text-gold-300">
+                          {pkg.price}
+                        </span>
+                        <span className="font-sans text-white/50 text-xs">{pkg.priceNote}</span>
+                      </div>
+                    </div>
 
-              {/* Features */}
-              <div className={`p-4 sm:p-6 flex flex-col gap-2 sm:gap-3 ${pkg.popular ? 'bg-cream-50' : 'bg-white'}`}>
-                {pkg.features.map((feature) => (
-                  <div key={feature.text} className="flex items-center gap-3">
-                    {feature.included ? (
-                      <div className="w-5 h-5 rounded-full bg-gold-100 flex items-center justify-center flex-shrink-0">
-                        <Check size={11} className="text-gold-600" strokeWidth={3} />
-                      </div>
-                    ) : (
-                      <div className="w-5 h-5 rounded-full bg-stone-100 flex items-center justify-center flex-shrink-0">
-                        <X size={11} className="text-stone-300" strokeWidth={3} />
-                      </div>
-                    )}
-                    <span className={`font-sans text-xs sm:text-sm ${feature.included ? 'text-stone-700' : 'text-stone-300'}`}>
-                      {feature.text}
-                    </span>
+                    {/* Features - show on hover */}
+                    <div className={`overflow-hidden transition-all duration-500 ${
+                      hoveredIndex === i ? 'max-h-96 opacity-100 mt-4' : 'max-h-0 opacity-0 mt-0'
+                    }`}>
+                      <div className="h-px bg-white/20 mb-4" />
+                      <ul className="space-y-2.5">
+                        {pkg.features.slice(0, 6).map((feature) => (
+                          <li key={feature.text} className={`flex items-center gap-2 ${!feature.included ? 'opacity-40' : ''}`}>
+                            {feature.included ? (
+                              <Check size={12} className="text-gold-400 flex-shrink-0" strokeWidth={3} />
+                            ) : (
+                              <X size={12} className="text-white/30 flex-shrink-0" strokeWidth={3} />
+                            )}
+                            <span className={`font-sans text-xs ${feature.included ? 'text-white/90' : 'text-white/40'}`}>
+                              {feature.text}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* CTA Button */}
+                    <a
+                      href={`https://wa.me/918825605403?text=Hi%20Dass!%20I'm%20interested%20in%20the%20${pkg.name}%20package%20(${pkg.price}).`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`mt-5 inline-flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-sans text-sm font-semibold tracking-wider uppercase transition-all duration-300 ${
+                        pkg.popular
+                          ? 'bg-gold-500 text-white hover:bg-gold-400 shadow-lg shadow-gold-500/25'
+                          : 'bg-white/10 text-white backdrop-blur-sm border border-white/20 hover:bg-white hover:text-stone-900'
+                      }`}
+                    >
+                      Book {pkg.name}
+                      <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                    </a>
                   </div>
-                ))}
-
-                <a
-                  href={`https://wa.me/918825605403?text=Hi%20Dass!%20I'm%20interested%20in%20the%20${pkg.name}%20package%20(${pkg.price}).`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`mt-3 sm:mt-4 w-full flex items-center justify-center gap-2 py-2.5 sm:py-3 rounded-lg font-sans text-sm font-medium tracking-widest uppercase transition-all duration-300 ${
-                    pkg.popular
-                      ? 'bg-gradient-to-r from-gold-600 to-gold-500 text-white hover:shadow-lg hover:shadow-gold-500/30 hover:scale-105'
-                      : 'border border-gold-400 text-gold-600 hover:bg-gold-500 hover:text-white hover:scale-105'
-                  }`}
-                >
-                  <MessageCircle size={14} />
-                  Book Now
-                </a>
+                </div>
               </div>
             </motion.div>
           ))}
@@ -107,7 +170,7 @@ export default function Services() {
           initial={{ opacity: 0 }}
           animate={inView ? { opacity: 1 } : {}}
           transition={{ delay: 0.8, duration: 0.6 }}
-          className="text-center font-sans text-stone-400 text-sm mt-10"
+          className="text-center font-sans text-stone-400 text-sm mt-12 sm:mt-16"
         >
           * All prices are starting prices. Contact us for custom quotes based on location and event duration.
         </motion.p>
