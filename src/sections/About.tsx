@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { Camera, Award, Heart, Star } from 'lucide-react';
+import dassPhoto from '../images/1778045046784.jpg';
 
 const stats = [
   { icon: Camera, value: '8+', label: 'Years of Experience' },
@@ -29,9 +30,9 @@ export default function About() {
               <div className="absolute -top-2 -left-2 sm:-top-4 sm:-left-4 w-full h-full border-2 border-gold-300 rounded-lg z-0" />
               <div className="relative z-10 rounded-lg overflow-hidden shadow-2xl">
                 <img
-                  src="https://images.pexels.com/photos/2269872/pexels-photo-2269872.jpeg?auto=compress&cs=tinysrgb&w=800"
+                  src={dassPhoto}
                   alt="Dass - DJ Photography Karaikudi"
-                  className="w-full h-[350px] sm:h-[450px] lg:h-[560px] object-cover object-center"
+                  className="w-full h-[420px] sm:h-[450px] lg:h-[560px] object-cover object-top"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
               </div>
@@ -59,12 +60,52 @@ export default function About() {
             className="space-y-8"
           >
             <div>
-              <span className="section-heading">About Me</span>
-              <h2 className="section-title">
-                I'm Dass,{' '}
-                <span className="italic text-gold-600">DJ Photography</span>
-              </h2>
-              <span className="gold-divider !mx-0 mt-5" />
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={inView ? { opacity: 1, y: 0 } : {}}
+                transition={{ delay: 0.1, duration: 0.6 }}
+                className="inline-flex items-center gap-3 mb-4"
+              >
+                <span className="h-px w-12 bg-gold-400" />
+                <span className="font-sans text-gold-600 text-xs tracking-[0.3em] uppercase font-semibold">
+                  Get To Know Me
+                </span>
+                <span className="h-px w-12 bg-gold-400" />
+              </motion.div>
+
+              <motion.h2
+                initial={{ opacity: 0, y: 30 }}
+                animate={inView ? { opacity: 1, y: 0 } : {}}
+                transition={{ delay: 0.3, duration: 0.8 }}
+                className="font-serif text-4xl sm:text-5xl md:text-6xl font-light text-stone-800 leading-tight"
+              >
+                About{' '}
+                <span className="relative inline-block">
+                  <span className="italic text-gold-600">Me</span>
+                  <motion.span
+                    initial={{ scaleX: 0 }}
+                    animate={inView ? { scaleX: 1 } : {}}
+                    transition={{ delay: 0.8, duration: 0.6 }}
+                    className="absolute -bottom-1 left-0 right-0 h-1 bg-gold-300 origin-left rounded-full"
+                  />
+                </span>
+              </motion.h2>
+
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={inView ? { opacity: 1 } : {}}
+                transition={{ delay: 0.5, duration: 0.6 }}
+                className="font-sans text-stone-400 text-sm mt-4 tracking-wide"
+              >
+                Your Storyteller Behind the Lens in Karaikudi
+              </motion.p>
+
+              <motion.span
+                initial={{ scaleX: 0 }}
+                animate={inView ? { scaleX: 1 } : {}}
+                transition={{ delay: 0.6, duration: 0.5 }}
+                className="gold-divider !mx-0 mt-6 origin-left"
+              />
             </div>
 
             <p className="font-serif text-stone-600 text-lg leading-relaxed">
