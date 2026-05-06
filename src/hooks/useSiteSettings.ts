@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
-export function useSiteSettings<T>(key: 'hero_data' | 'about_data' | 'testimonials_data', defaultValue: T) {
+export function useSiteSettings<T>(key: 'hero_data' | 'about_data' | 'testimonials_data' | 'services_data', defaultValue: T) {
   const [data, setData] = useState<T>(defaultValue);
   const [loading, setLoading] = useState(false);
 

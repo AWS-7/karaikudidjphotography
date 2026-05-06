@@ -36,7 +36,7 @@ import { useAvailability, updateAvailability, deleteAvailability } from '../hook
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { useImageUpload, deleteImage } from '../hooks/useImages';
 import { useToast } from '../contexts/ToastContext';
-import type { Event, Enquiry, Availability, AboutData, HeroData } from '../types/database';
+import type { Event, Enquiry, Availability, AboutData, HeroData, Service } from '../types/database';
 import { saveTestimonials, loadTestimonials, type Testimonial } from '../data/testimonials';
 import img1 from '../images/1778054327731.jpg';
 import img2 from '../images/1778054327722.jpg';
@@ -46,7 +46,7 @@ import logo from '../images/1778058672282-removebg-preview.png';
 
 const packageImages = [img1, img2, img3, img4];
 
-type Tab = 'dashboard' | 'gallery' | 'add-event' | 'upload' | 'packages' | 'hero' | 'about' | 'reviews' | 'enquiries' | 'calendar' | 'settings';
+type Tab = 'dashboard' | 'gallery' | 'add-event' | 'upload' | 'packages' | 'services' | 'hero' | 'about' | 'reviews' | 'enquiries' | 'calendar' | 'settings';
 
 const navItems: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -55,6 +55,7 @@ const navItems: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'gallery', label: 'Manage Gallery', icon: Images },
   { id: 'add-event', label: 'Add Event', icon: PlusCircle },
   { id: 'upload', label: 'Upload Images', icon: Upload },
+  { id: 'services', label: 'Services List', icon: Camera },
   { id: 'packages', label: 'Packages', icon: Package },
   { id: 'hero', label: 'Hero Section', icon: Home },
   { id: 'about', label: 'About Me', icon: Camera },
@@ -279,6 +280,7 @@ export default function Admin() {
               {activeTab === 'add-event' && <AddEventTab />}
               {activeTab === 'upload' && <UploadTab dragOver={dragOver} setDragOver={setDragOver} />}
               {activeTab === 'packages' && <PackagesTab />}
+              {activeTab === 'services' && <ServicesTab />}
               {activeTab === 'hero' && <HeroTab />}
               {activeTab === 'about' && <AboutTab />}
               {activeTab === 'enquiries' && <EnquiriesTab />}
@@ -550,12 +552,25 @@ function GalleryTab() {
 }
 
 /* ─────────────── Add Event Tab ─────────────── */
+const DEFAULT_SERVICES_LIST: Service[] = [
+  { id: '1', title: 'Wedding Photography', description: '', image: '', icon: 'Wedding' },
+  { id: '2', title: 'Engagement Shoots', description: '', image: '', icon: 'Engagement' },
+  { id: '3', title: 'Pre-Wedding & Post-Wedding', description: '', image: '', icon: 'Prewedding' },
+  { id: '4', title: 'Puberty Ceremony', description: '', image: '', icon: 'Puberty' },
+  { id: '5', title: 'Birthday Shoots', description: '', image: '', icon: 'Birthday' },
+  { id: '6', title: 'Baby Shoots & Themes', description: '', image: '', icon: 'Babyshoots' },
+  { id: '7', title: 'Modeling Shoots', description: '', image: '', icon: 'Modeling' },
+  { id: '8', title: 'Corporate Events', description: '', image: '', icon: 'Corporate' },
+  { id: '9', title: 'Portrait Sessions', description: '', image: '', icon: 'Portraits' },
+];
+
 function AddEventTab() {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
+  const { data: services } = useSiteSettings<Service[]>('services_data', DEFAULT_SERVICES_LIST);
   const [formData, setFormData] = useState({
     event_name: '',
-    category: 'Wedding',
+    category: 'Wedding Photography',
     description: '',
     cover_image: '',
   });
@@ -583,7 +598,7 @@ function AddEventTab() {
       showToast('success', 'Event created successfully!');
       setFormData({
         event_name: '',
-        category: 'Wedding',
+        category: services[0]?.title || 'Wedding Photography',
         description: '',
         cover_image: '',
       });
@@ -621,9 +636,10 @@ function AddEventTab() {
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors bg-white"
             >
-              {['Wedding', 'Pre-Wedding', 'Engagement', 'Reception', 'Ceremony', 'Event'].map((c) => (
-                <option key={c} value={c}>{c}</option>
+              {services.map((s) => (
+                <option key={s.id} value={s.title}>{s.title}</option>
               ))}
+              <option value="Event">Other Event</option>
             </select>
           </div>
         </div>
@@ -2172,6 +2188,188 @@ function SettingsTab() {
           </button>
         </div>
       ))}
+    </div>
+  );
+}
+
+/* ─────────────── Services Tab ─────────────── */
+const DEFAULT_SERVICES: Service[] = [
+  { id: '1', title: 'Wedding Photography', description: 'Capturing the magic and emotion of your big day with a cinematic and candid touch.', image: 'https://images.pexels.com/photos/1456613/pexels-photo-1456613.jpeg?auto=compress&cs=tinysrgb&w=800', icon: 'Wedding' },
+  { id: '2', title: 'Engagement Shoots', description: 'Celebrating your journey of love with beautiful, romantic pre-wedding sessions.', image: 'https://images.pexels.com/photos/256737/pexels-photo-256737.jpeg?auto=compress&cs=tinysrgb&w=800', icon: 'Engagement' },
+  { id: '3', title: 'Pre-Wedding & Post-Wedding', description: 'Creative and artistic shoots before and after your wedding to complete your story.', image: 'https://images.pexels.com/photos/313707/pexels-photo-313707.jpeg?auto=compress&cs=tinysrgb&w=800', icon: 'Prewedding' },
+  { id: '4', title: 'Puberty Ceremony', description: 'Documenting traditional milestones and family celebrations with cultural respect.', image: 'https://images.pexels.com/photos/1603884/pexels-photo-1603884.jpeg?auto=compress&cs=tinysrgb&w=800', icon: 'Puberty' },
+  { id: '5', title: 'Birthday Shoots', description: 'Fun and vibrant photography for birthdays of all ages, from toddlers to grandparents.', image: 'https://images.pexels.com/photos/1543762/pexels-photo-1543762.jpeg?auto=compress&cs=tinysrgb&w=800', icon: 'Birthday' },
+  { id: '6', title: 'Baby Shoots & Themes', description: 'Adorable outdoor and theme-based sessions for your little ones to cherish forever.', image: 'https://images.pexels.com/photos/3845492/pexels-photo-3845492.jpeg?auto=compress&cs=tinysrgb&w=800', icon: 'Babyshoots' },
+  { id: '7', title: 'Modeling Shoots', description: 'Professional portfolio sessions and fashion photography with high-end editing.', image: 'https://images.pexels.com/photos/157675/fashion-men-model-canvas-157675.jpeg?auto=compress&cs=tinysrgb&w=800', icon: 'Modeling' },
+  { id: '8', title: 'Corporate Events', description: 'High-quality coverage for business conferences, launches, and professional gatherings.', image: 'https://images.pexels.com/photos/2182973/pexels-photo-2182973.jpeg?auto=compress&cs=tinysrgb&w=800', icon: 'Corporate' },
+  { id: '9', title: 'Portrait Sessions', description: 'Personalized portrait photography that captures your personality and unique character.', image: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=800', icon: 'Portraits' },
+];
+
+function ServicesTab() {
+  const { showToast } = useToast();
+  const { data: services, loading, updateSettings } = useSiteSettings<Service[]>('services_data', DEFAULT_SERVICES);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSave = async (updatedService: Service) => {
+    const updatedServices = services.map(s => s.id === updatedService.id ? updatedService : s);
+    try {
+      await updateSettings(updatedServices);
+      showToast('success', 'Service updated successfully!');
+      setEditingService(null);
+    } catch (err) {
+      showToast('error', 'Failed to save changes');
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editingService) return;
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `service_${editingService.id}_${Date.now()}.${fileExt}`;
+      const storagePath = `services/${fileName}`;
+      const { error: uploadError } = await supabase.storage.from('gallery').upload(storagePath, file, { cacheControl: '3600', upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage.from('gallery').getPublicUrl(storagePath);
+      setEditingService({ ...editingService, image: urlData.publicUrl });
+      showToast('success', 'Service image uploaded successfully!');
+    } catch (err) {
+      showToast('error', 'Failed to upload image');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 size={40} className="text-gold-500 animate-spin" /></div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-serif text-3xl text-stone-800">Services Management</h1>
+          <p className="font-sans text-stone-400 text-sm mt-1">Manage the photography services offered on your website</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {services.map((service) => (
+          <div key={service.id} className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden group">
+            <div className="aspect-[16/9] relative overflow-hidden">
+              <img src={service.image} alt={service.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors" />
+              <button
+                onClick={() => setEditingService(service)}
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white text-stone-800 px-4 py-2 rounded-lg font-sans text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2"
+              >
+                <Pencil size={14} /> Edit Service
+              </button>
+            </div>
+            <div className="p-5">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-gold-600 bg-gold-50 p-1.5 rounded-lg"><Camera size={16} /></span>
+                <h3 className="font-serif text-lg text-stone-800">{service.title}</h3>
+              </div>
+              <p className="font-sans text-xs text-stone-400 line-clamp-2">{service.description}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <AnimatePresence>
+        {editingService && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            onClick={() => setEditingService(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl w-full max-w-xl flex flex-col overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-stone-100 flex items-center justify-between">
+                <h2 className="font-serif text-2xl text-stone-800">Edit {editingService.title}</h2>
+                <button onClick={() => setEditingService(null)} className="p-2 hover:bg-stone-100 rounded-full transition-colors">
+                  <X size={24} className="text-stone-400" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-5">
+                <div>
+                  <label className="font-sans text-xs text-stone-400 uppercase tracking-widest mb-1.5 block">Service Image</label>
+                  <div className="flex gap-4 items-center">
+                    <div className="w-24 h-16 rounded-lg overflow-hidden border border-stone-100 shadow-sm">
+                      <img src={editingService.image} alt="Service" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex-1">
+                      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploading}
+                          className="px-4 py-2 bg-stone-100 hover:bg-stone-200 rounded-lg text-stone-600 text-xs font-sans transition-colors flex items-center gap-2"
+                        >
+                          {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                          Upload Photo
+                        </button>
+                        <input
+                          type="url"
+                          value={editingService.image}
+                          onChange={(e) => setEditingService({ ...editingService, image: e.target.value })}
+                          placeholder="Or paste image URL"
+                          className="flex-1 border border-stone-200 rounded-lg px-3 py-2 font-sans text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-sans text-xs text-stone-400 uppercase tracking-widest mb-1.5 block">Title</label>
+                  <input
+                    type="text"
+                    value={editingService.title}
+                    onChange={(e) => setEditingService({ ...editingService, title: e.target.value })}
+                    className="w-full border border-stone-200 rounded-lg px-4 py-2.5 font-sans text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-sans text-xs text-stone-400 uppercase tracking-widest mb-1.5 block">Description</label>
+                  <textarea
+                    value={editingService.description}
+                    onChange={(e) => setEditingService({ ...editingService, description: e.target.value })}
+                    rows={4}
+                    className="w-full border border-stone-200 rounded-lg px-4 py-2.5 font-sans text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="p-6 bg-stone-50 border-t border-stone-100 flex gap-3">
+                <button
+                  onClick={() => setEditingService(null)}
+                  className="flex-1 py-3 rounded-xl font-sans text-sm font-semibold text-stone-500 hover:bg-stone-100 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleSave(editingService)}
+                  className="flex-[2] py-3 rounded-xl font-sans text-sm font-semibold bg-gold-500 text-white hover:bg-gold-600 transition-all shadow-lg shadow-gold-500/20 flex items-center justify-center gap-2"
+                >
+                  <Check size={16} /> Save Changes
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

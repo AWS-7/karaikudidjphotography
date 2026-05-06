@@ -11,6 +11,7 @@ import Preloader from './components/Preloader';
 const GalleryEvent = lazy(() => import('./pages/GalleryEvent'));
 const Admin = lazy(() => import('./pages/Admin'));
 const PackageDetails = lazy(() => import('./pages/PackageDetails'));
+const ServiceDetails = lazy(() => import('./pages/ServiceDetails'));
 
 function PageLoader() {
   return (
@@ -61,6 +62,7 @@ function Layout() {
               <Route path="/" element={<Home />} />
               <Route path="/gallery/:slug" element={<GalleryEvent />} />
               <Route path="/package/:id" element={<PackageDetails />} />
+              <Route path="/service/:id" element={<ServiceDetails />} />
               <Route path="/admin" element={<Admin />} />
             </Routes>
           </Suspense>
