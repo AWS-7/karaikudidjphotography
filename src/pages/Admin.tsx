@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { useEvents, createEvent, deleteEvent } from '../hooks/useEvents';
+import { useEvents, createEvent, updateEvent, deleteEvent } from '../hooks/useEvents';
 import { usePackages, updatePackage, createPackage, deletePackage } from '../hooks/usePackages';
 import { useEnquiries, updateEnquiryStatus, deleteEnquiry } from '../hooks/useEnquiries';
 import { useAvailability, updateAvailability, deleteAvailability } from '../hooks/useAvailability';
@@ -377,6 +377,16 @@ function GalleryTab() {
   const { showToast } = useToast();
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [selectedEventImages, setSelectedEventImages] = useState<Event | null>(null);
+  const [editingEvent, setEditingEvent] = useState<{
+    id: string;
+    event_name: string;
+    slug: string;
+    category: string;
+    cover_image: string;
+  } | null>(null);
+  const [eventSaving, setEventSaving] = useState(false);
+  const [uploadingEventCover, setUploadingEventCover] = useState(false);
+  const eventCoverInputRef = useRef<HTMLInputElement>(null);
 
   const handleDelete = async (event: Event) => {
     if (!confirm(`Are you sure you want to delete "${event.name}"? This will also delete all ${event.images.length} photos.`)) {
@@ -419,6 +429,71 @@ function GalleryTab() {
     } catch (err) {
       console.error('Delete image error:', err);
       showToast('error', `Failed to delete image: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  };
+
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '-');
+  };
+
+  const handleEditClick = (event: Event) => {
+    setEditingEvent({
+      id: event.id,
+      event_name: event.name,
+      slug: event.slug,
+      category: event.category,
+      cover_image: event.coverImage,
+    });
+  };
+
+  const handleEventCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editingEvent) return;
+
+    setUploadingEventCover(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `event_cover_${Date.now()}.${fileExt}`;
+      const storagePath = `covers/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('gallery')
+        .upload(storagePath, file, { cacheControl: '3600', upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from('gallery').getPublicUrl(storagePath);
+      setEditingEvent({ ...editingEvent, cover_image: urlData.publicUrl });
+      showToast('success', 'Cover image uploaded successfully!');
+    } catch (err) {
+      console.error('Event cover upload error:', err);
+      showToast('error', 'Failed to upload cover image');
+    } finally {
+      setUploadingEventCover(false);
+    }
+  };
+
+  const handleSaveEvent = async () => {
+    if (!editingEvent) return;
+    setEventSaving(true);
+    try {
+      await updateEvent(editingEvent.id, {
+        event_name: editingEvent.event_name,
+        slug: generateSlug(editingEvent.event_name),
+        category: editingEvent.category,
+        cover_image: editingEvent.cover_image,
+      });
+      showToast('success', 'Event updated successfully');
+      setEditingEvent(null);
+      await refetch();
+    } catch (err) {
+      console.error('Update event error:', err);
+      showToast('error', `Failed to update event: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setEventSaving(false);
     }
   };
 
@@ -468,6 +543,12 @@ function GalleryTab() {
                     className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-gold-50 hover:bg-gold-100 text-gold-700 text-xs font-sans transition-colors"
                   >
                     <Images size={13} /> Manage Photos
+                  </button>
+                  <button
+                    onClick={() => handleEditClick(event)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-stone-50 hover:bg-stone-100 text-stone-600 text-xs font-sans transition-colors"
+                  >
+                    <Pencil size={13} /> Edit
                   </button>
                   <button
                     onClick={() => handleDelete(event)}
@@ -541,6 +622,103 @@ function GalleryTab() {
                   className="px-6 py-2 bg-white border border-stone-200 rounded-lg font-sans text-sm text-stone-600 hover:bg-stone-100 transition-colors"
                 >
                   Close
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {editingEvent && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            onClick={() => setEditingEvent(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-stone-100 flex items-center justify-between">
+                <div>
+                  <h2 className="font-serif text-2xl text-stone-800">Edit Gallery Event</h2>
+                  <p className="font-sans text-stone-400 text-sm">Update event details and cover image</p>
+                </div>
+                <button
+                  onClick={() => setEditingEvent(null)}
+                  className="p-2 hover:bg-stone-100 rounded-full transition-colors"
+                >
+                  <X size={24} className="text-stone-400" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Event Name</label>
+                  <input
+                    type="text"
+                    value={editingEvent.event_name}
+                    onChange={(e) => setEditingEvent({ ...editingEvent, event_name: e.target.value })}
+                    className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Category</label>
+                  <input
+                    type="text"
+                    value={editingEvent.category}
+                    onChange={(e) => setEditingEvent({ ...editingEvent, category: e.target.value })}
+                    className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Cover Image</label>
+                  <div className="flex gap-4 items-center">
+                    <div className="w-24 h-24 rounded-lg overflow-hidden border border-stone-200 shadow-sm">
+                      <img src={editingEvent.cover_image} alt="Event cover" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        ref={eventCoverInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleEventCoverUpload}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => eventCoverInputRef.current?.click()}
+                        disabled={uploadingEventCover}
+                        className="px-4 py-3 bg-stone-100 rounded-lg text-stone-700 text-sm font-sans hover:bg-stone-200 transition-colors"
+                      >
+                        {uploadingEventCover ? 'Uploading...' : 'Upload New Cover'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 bg-stone-50 border-t border-stone-100 flex items-center justify-end gap-3">
+                <button
+                  onClick={() => setEditingEvent(null)}
+                  className="px-6 py-3 bg-white border border-stone-200 rounded-lg font-sans text-sm text-stone-600 hover:bg-stone-100 transition-colors"
+                  type="button"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveEvent}
+                  disabled={eventSaving}
+                  className="px-6 py-3 bg-gold-600 text-white rounded-lg text-sm font-sans hover:bg-gold-700 transition-colors disabled:opacity-50"
+                  type="button"
+                >
+                  {eventSaving ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </motion.div>
