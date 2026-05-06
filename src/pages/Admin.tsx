@@ -33,9 +33,10 @@ import { useEvents, createEvent, deleteEvent } from '../hooks/useEvents';
 import { usePackages, updatePackage, createPackage, deletePackage } from '../hooks/usePackages';
 import { useEnquiries, updateEnquiryStatus, deleteEnquiry } from '../hooks/useEnquiries';
 import { useAvailability, updateAvailability, deleteAvailability } from '../hooks/useAvailability';
+import { useSiteSettings } from '../hooks/useSiteSettings';
 import { useImageUpload, deleteImage } from '../hooks/useImages';
 import { useToast } from '../contexts/ToastContext';
-import type { Event, Enquiry, Availability } from '../types/database';
+import type { Event, Enquiry, Availability, AboutData } from '../types/database';
 import { saveTestimonials, loadTestimonials, type Testimonial } from '../data/testimonials';
 import img1 from '../images/1778054327731.jpg';
 import img2 from '../images/1778054327722.jpg';
@@ -1348,74 +1349,37 @@ function PackagesTab() {
 }
 
 /* ─────────────── Hero Tab ─────────────── */
-const HERO_STORAGE_KEY = 'dj_hero_data';
-
-interface HeroData {
-  subtitle: string;
-  title: string;
-  tagline: string;
-  stat1Value: string;
-  stat1Label: string;
-  stat2Value: string;
-  stat2Label: string;
-  stat3Value: string;
-  stat3Label: string;
-  bgImage: string;
-  bgImages?: string[];
-}
-
-function loadHeroData(): HeroData {
-  const defaultData: HeroData = {
-    subtitle: 'DJ Photography',
-    title: 'Capturing Love, Light & Emotion',
-    tagline: 'Professional Wedding Photographer & Cinematographer',
-    stat1Value: '8+',
-    stat1Label: 'Years Experience',
-    stat2Value: '1500+',
-    stat2Label: 'Weddings',
-    stat3Value: '100%',
-    stat3Label: 'Happy Clients',
-    bgImage: 'https://images.pexels.com/photos/1456613/pexels-photo-1456613.jpeg?auto=compress&cs=tinysrgb&w=1920',
-    bgImages: ['https://images.pexels.com/photos/1456613/pexels-photo-1456613.jpeg?auto=compress&cs=tinysrgb&w=1920'],
-  };
-
-  try {
-    const stored = localStorage.getItem(HERO_STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      return { 
-        ...defaultData, 
-        ...parsed,
-        bgImages: parsed.bgImages || [parsed.bgImage || defaultData.bgImage]
-      };
-    }
-  } catch { /* ignore */ }
-  return defaultData;
-}
+const DEFAULT_HERO: HeroData = {
+  subtitle: 'DJ Photography',
+  title: 'Capturing Love, Light & Emotion',
+  tagline: 'Professional Wedding Photographer & Cinematographer',
+  stat1Value: '8+',
+  stat1Label: 'Years Experience',
+  stat2Value: '1500+',
+  stat2Label: 'Weddings',
+  stat3Value: '100%',
+  stat3Label: 'Happy Clients',
+  bgImage: 'https://images.pexels.com/photos/1456613/pexels-photo-1456613.jpeg?auto=compress&cs=tinysrgb&w=1920',
+  bgImages: ['https://images.pexels.com/photos/1456613/pexels-photo-1456613.jpeg?auto=compress&cs=tinysrgb&w=1920'],
+};
 
 function HeroTab() {
   const { showToast } = useToast();
-  const [heroData, setHeroData] = useState<HeroData>(loadHeroData);
+  const { data: heroData, loading, updateSettings } = useSiteSettings<HeroData>('hero_data', DEFAULT_HERO);
   const [uploadingHero, setUploadingHero] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUrlChange = (url: string) => {
     let normalizedUrl = url;
-    
-    // Handle Google Drive share links
     if (url.includes('drive.google.com')) {
       const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-      if (match && match[1]) {
-        normalizedUrl = `https://drive.google.com/uc?export=view&id=${match[1]}`;
-      }
+      if (match && match[1]) normalizedUrl = `https://drive.google.com/uc?export=view&id=${match[1]}`;
     }
-    
-    // Warn about Google Photos (they don't allow direct linking easily)
     if (url.includes('photos.app.goo.gl') || url.includes('photos.google.com')) {
       showToast('error', 'Google Photos links are not direct images. Please use the Upload button instead.');
     }
 
-    setHeroData({ 
+    updateSettings({ 
       ...heroData, 
       bgImage: normalizedUrl,
       bgImages: [...(heroData.bgImages || []), normalizedUrl]
@@ -1425,29 +1389,19 @@ function HeroTab() {
   const handleRemoveImage = (index: number) => {
     const currentImages = heroData.bgImages || [];
     const newImages = currentImages.filter((_, i) => i !== index);
-    setHeroData({
+    updateSettings({
       ...heroData,
       bgImages: newImages,
       bgImage: newImages[0] || ''
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     try {
-      // Don't save base64 data to localStorage to avoid QuotaExceededError
-      if (heroData.bgImage.startsWith('data:') || (heroData.bgImages || []).some(img => img.startsWith('data:'))) {
-        showToast('error', 'Please wait for all image uploads to complete before saving');
-        return;
-      }
-      localStorage.setItem(HERO_STORAGE_KEY, JSON.stringify(heroData));
+      await updateSettings(heroData);
       showToast('success', 'Hero section updated successfully!');
     } catch (err) {
-      console.error('Save hero error:', err);
-      if (err instanceof Error && err.name === 'QuotaExceededError') {
-        showToast('error', 'Storage full. Try using smaller images or URLs.');
-      } else {
-        showToast('error', 'Failed to save changes');
-      }
+      showToast('error', 'Failed to save changes');
     }
   };
 
@@ -1458,26 +1412,14 @@ function HeroTab() {
     setUploadingHero(true);
     try {
       const uploadedUrls: string[] = [];
-      
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         if (!file.type.startsWith('image/')) continue;
-        if (file.size > 5 * 1024 * 1024) {
-          showToast('error', `File ${file.name} too large (>5MB)`);
-          continue;
-        }
-
         const fileExt = file.name.split('.').pop();
         const fileName = `hero_bg_${Date.now()}_${i}.${fileExt}`;
         const storagePath = `hero/${fileName}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from('gallery')
-          .upload(storagePath, file, {
-            cacheControl: '3600',
-            upsert: true,
-          });
-
+        const { error: uploadError } = await supabase.storage.from('gallery').upload(storagePath, file, { cacheControl: '3600', upsert: true });
         if (uploadError) throw uploadError;
 
         const { data: urlData } = supabase.storage.from('gallery').getPublicUrl(storagePath);
@@ -1485,21 +1427,17 @@ function HeroTab() {
       }
 
       const newImages = [...(heroData.bgImages || []), ...uploadedUrls];
-      setHeroData((prev) => ({ 
-        ...prev, 
-        bgImages: newImages,
-        bgImage: newImages[0] || prev.bgImage
-      }));
-      
+      await updateSettings({ ...heroData, bgImages: newImages, bgImage: newImages[0] || heroData.bgImage });
       showToast('success', `${uploadedUrls.length} images uploaded successfully!`);
     } catch (err) {
-      console.error('Hero upload error:', err);
-      showToast('error', 'Failed to upload images to storage');
+      showToast('error', 'Failed to upload images');
     } finally {
       setUploadingHero(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
+
+  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 size={40} className="text-gold-500 animate-spin" /></div>;
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -1508,7 +1446,6 @@ function HeroTab() {
         <p className="font-sans text-stone-400 text-sm mt-1">Edit your homepage hero slider and content</p>
       </div>
 
-      {/* Preview Slider */}
       <div className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden p-6">
         <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-4 block">Background Slider Preview</label>
         <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
@@ -1516,99 +1453,46 @@ function HeroTab() {
             <div key={idx} className="relative group aspect-[16/10] rounded-lg overflow-hidden border border-stone-100 shadow-sm">
               <img src={img} alt={`Hero ${idx + 1}`} className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <button
-                  onClick={() => handleRemoveImage(idx)}
-                  className="p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                >
-                  <Trash2 size={14} />
-                </button>
+                <button onClick={() => handleRemoveImage(idx)} className="p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"><Trash2 size={14} /></button>
               </div>
-              {idx === 0 && (
-                <div className="absolute top-1 left-1 bg-gold-500 text-white text-[8px] px-1.5 py-0.5 rounded-full font-sans uppercase tracking-tighter">
-                  Primary
-                </div>
-              )}
+              {idx === 0 && <div className="absolute top-1 left-1 bg-gold-500 text-white text-[8px] px-1.5 py-0.5 rounded-full font-sans uppercase tracking-tighter">Primary</div>}
             </div>
           ))}
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploadingHero}
-            className="aspect-[16/10] rounded-lg border-2 border-dashed border-stone-200 flex flex-col items-center justify-center text-stone-400 hover:border-gold-300 hover:text-gold-500 transition-all group"
-          >
+          <button onClick={() => fileInputRef.current?.click()} disabled={uploadingHero} className="aspect-[16/10] rounded-lg border-2 border-dashed border-stone-200 flex flex-col items-center justify-center text-stone-400 hover:border-gold-300 hover:text-gold-500 transition-all group">
             {uploadingHero ? <Loader2 size={24} className="animate-spin" /> : <PlusCircle size={24} />}
             <span className="text-[10px] mt-1 font-sans">Add Image</span>
           </button>
         </div>
       </div>
 
-      {/* Form */}
       <div className="bg-white rounded-xl border border-stone-200 shadow-sm p-8 space-y-5">
         <h3 className="font-serif text-lg text-stone-800 border-b border-stone-100 pb-3">Hero Content</h3>
-
-        {/* Multiple Upload */}
         <div className="space-y-3">
           <label className="font-sans text-xs text-stone-400 tracking-widest uppercase block">Add Background Images</label>
           <div className="flex gap-3">
-            <input
-              type="url"
-              placeholder="Paste image URL and press enter"
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  handleUrlChange((e.target as HTMLInputElement).value);
-                  (e.target as HTMLInputElement).value = '';
-                }
-              }}
-              className="flex-1 border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors"
-            />
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingHero}
-              className="flex items-center gap-2 px-6 py-3 bg-stone-100 hover:bg-stone-200 rounded-lg text-stone-600 text-sm font-sans transition-colors disabled:opacity-50"
-            >
+            <input type="url" placeholder="Paste image URL and press enter" onKeyPress={(e) => { if (e.key === 'Enter') { handleUrlChange((e.target as HTMLInputElement).value); (e.target as HTMLInputElement).value = ''; } }} className="flex-1 border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors" />
+            <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFileUpload} className="hidden" />
+            <button onClick={() => fileInputRef.current?.click()} disabled={uploadingHero} className="flex items-center gap-2 px-6 py-3 bg-stone-100 hover:bg-stone-200 rounded-lg text-stone-600 text-sm font-sans transition-colors disabled:opacity-50">
               {uploadingHero ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
               Upload Multiple
             </button>
           </div>
-          <p className="font-sans text-[10px] text-stone-400">Recommended size: 1920x1080px. Images will cycle every 5 seconds.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
             <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Subtitle (Script)</label>
-            <input
-              type="text"
-              value={heroData.subtitle}
-              onChange={(e) => setHeroData({ ...heroData, subtitle: e.target.value })}
-              className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors"
-            />
+            <input type="text" value={heroData.subtitle} onChange={(e) => updateSettings({ ...heroData, subtitle: e.target.value })} className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 transition-colors" />
           </div>
           <div>
             <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Tagline</label>
-            <input
-              type="text"
-              value={heroData.tagline}
-              onChange={(e) => setHeroData({ ...heroData, tagline: e.target.value })}
-              className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors"
-            />
+            <input type="text" value={heroData.tagline} onChange={(e) => updateSettings({ ...heroData, tagline: e.target.value })} className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 transition-colors" />
           </div>
         </div>
 
         <div>
           <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Main Title</label>
-          <input
-            type="text"
-            value={heroData.title}
-            onChange={(e) => setHeroData({ ...heroData, title: e.target.value })}
-            className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors"
-          />
+          <input type="text" value={heroData.title} onChange={(e) => updateSettings({ ...heroData, title: e.target.value })} className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 transition-colors" />
         </div>
 
         <h3 className="font-serif text-lg text-stone-800 border-b border-stone-100 pb-3 pt-2">Stats</h3>
@@ -1620,20 +1504,8 @@ function HeroTab() {
           ].map((stat) => (
             <div key={stat.title} className="space-y-3">
               <label className="font-sans text-xs text-stone-500 font-medium">{stat.title}</label>
-              <input
-                type="text"
-                value={heroData[stat.valueKey as keyof typeof heroData]}
-                onChange={(e) => setHeroData({ ...heroData, [stat.valueKey]: e.target.value })}
-                placeholder="Value"
-                className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 transition-colors"
-              />
-              <input
-                type="text"
-                value={heroData[stat.labelKey as keyof typeof heroData]}
-                onChange={(e) => setHeroData({ ...heroData, [stat.labelKey]: e.target.value })}
-                placeholder="Label"
-                className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 transition-colors"
-              />
+              <input type="text" value={heroData[stat.valueKey as keyof typeof heroData] as string} onChange={(e) => updateSettings({ ...heroData, [stat.valueKey]: e.target.value })} placeholder="Value" className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 transition-colors" />
+              <input type="text" value={heroData[stat.labelKey as keyof typeof heroData] as string} onChange={(e) => updateSettings({ ...heroData, [stat.labelKey]: e.target.value })} placeholder="Label" className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 transition-colors" />
             </div>
           ))}
         </div>
@@ -1648,57 +1520,27 @@ function HeroTab() {
 }
 
 /* ─────────────── About Tab ─────────────── */
-const ABOUT_STORAGE_KEY = 'dj_about_data';
-
-interface AboutData {
-  name: string;
-  subtitle: string;
-  title: string;
-  description1: string;
-  description2: string;
-  since: string;
-  location: string;
-  image: string;
-  specialties: string[];
-  stats: { icon: string; value: string; label: string }[];
-}
-
-function loadAboutData(): AboutData {
-  const defaultData: AboutData = {
-    name: 'Dass',
-    subtitle: 'Get To Know Me',
-    title: 'Your Storyteller Behind the Lens in Karaikudi',
-    description1: "Based in the heart of Karaikudi, I've spent over 8 years perfecting the art of capturing life's most precious moments. Every wedding is a unique story — and I believe in telling it through candid emotions, natural light, and real moments that you'll treasure forever.",
-    description2: "From the nervous excitement of the morning preparations to the joyful tears during the ceremony, I document every layer of your wedding day with a cinematic eye and a respectful presence. My approach is unobtrusive, allowing genuine moments to unfold naturally.",
-    since: '2016',
-    location: 'Karaikudi',
-    image: 'https://images.pexels.com/photos/1456613/pexels-photo-1456613.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    specialties: [
-      'Candid Storytelling',
-      'Emotion-First Approach',
-      'Cinematic Filmmaking',
-      'Pre-Wedding Shoots',
-      'Chettinad Specialist',
-      'Same-Day Edits',
-    ],
-    stats: [
-      { icon: 'Camera', value: '8+', label: 'Years of Experience' },
-      { icon: 'Heart', value: '1500+', label: 'Weddings Captured' },
-      { icon: 'Award', value: '50+', label: 'Awards & Recognition' },
-      { icon: 'Star', value: '100%', label: 'Client Satisfaction' },
-    ],
-  };
-
-  try {
-    const stored = localStorage.getItem(ABOUT_STORAGE_KEY);
-    if (stored) return { ...defaultData, ...JSON.parse(stored) };
-  } catch { /* ignore */ }
-  return defaultData;
-}
+const DEFAULT_ABOUT: AboutData = {
+  name: 'Dass',
+  subtitle: 'Get To Know Me',
+  title: 'Your Storyteller Behind the Lens in Karaikudi',
+  description1: "Based in the heart of Karaikudi, I've spent over 8 years perfecting the art of capturing life's most precious moments. Every wedding is a unique story — and I believe in telling it through candid emotions, natural light, and real moments that you'll treasure forever.",
+  description2: "From the nervous excitement of the morning preparations to the joyful tears during the ceremony, I document every layer of your wedding day with a cinematic eye and a respectful presence. My approach is unobtrusive, allowing genuine moments to unfold naturally.",
+  since: '2016',
+  location: 'Karaikudi',
+  image: 'https://images.pexels.com/photos/1456613/pexels-photo-1456613.jpeg?auto=compress&cs=tinysrgb&w=1200',
+  specialties: ['Candid Storytelling', 'Emotion-First Approach', 'Cinematic Filmmaking', 'Pre-Wedding Shoots', 'Chettinad Specialist', 'Same-Day Edits'],
+  stats: [
+    { icon: 'Camera', value: '8+', label: 'Years of Experience' },
+    { icon: 'Heart', value: '1500+', label: 'Weddings Captured' },
+    { icon: 'Award', value: '50+', label: 'Awards & Recognition' },
+    { icon: 'Star', value: '100%', label: 'Client Satisfaction' },
+  ],
+};
 
 function AboutTab() {
   const { showToast } = useToast();
-  const [aboutData, setAboutData] = useState<AboutData>(loadAboutData);
+  const { data: aboutData, loading, updateSettings } = useSiteSettings<AboutData>('about_data', DEFAULT_ABOUT);
   const [uploadingAbout, setUploadingAbout] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [newSpecialty, setNewSpecialty] = useState('');
@@ -1706,43 +1548,26 @@ function AboutTab() {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      showToast('error', 'Please select an image file');
-      return;
-    }
-
     setUploadingAbout(true);
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `about_me_${Date.now()}.${fileExt}`;
       const storagePath = `about/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('gallery')
-        .upload(storagePath, file, {
-          cacheControl: '3600',
-          upsert: true,
-        });
-
+      const { error: uploadError } = await supabase.storage.from('gallery').upload(storagePath, file, { cacheControl: '3600', upsert: true });
       if (uploadError) throw uploadError;
-
       const { data: urlData } = supabase.storage.from('gallery').getPublicUrl(storagePath);
-      const imageUrl = urlData.publicUrl;
-
-      setAboutData((prev) => ({ ...prev, image: imageUrl }));
+      await updateSettings({ ...aboutData, image: urlData.publicUrl });
       showToast('success', 'Profile image uploaded successfully!');
     } catch (err) {
-      console.error('About upload error:', err);
       showToast('error', 'Failed to upload image');
     } finally {
       setUploadingAbout(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     try {
-      localStorage.setItem(ABOUT_STORAGE_KEY, JSON.stringify(aboutData));
+      await updateSettings(aboutData);
       showToast('success', 'About section updated successfully!');
     } catch (err) {
       showToast('error', 'Failed to save changes');
@@ -1751,19 +1576,15 @@ function AboutTab() {
 
   const addSpecialty = () => {
     if (!newSpecialty.trim()) return;
-    setAboutData({
-      ...aboutData,
-      specialties: [...aboutData.specialties, newSpecialty.trim()],
-    });
+    updateSettings({ ...aboutData, specialties: [...aboutData.specialties, newSpecialty.trim()] });
     setNewSpecialty('');
   };
 
   const removeSpecialty = (index: number) => {
-    setAboutData({
-      ...aboutData,
-      specialties: aboutData.specialties.filter((_, i) => i !== index),
-    });
+    updateSettings({ ...aboutData, specialties: aboutData.specialties.filter((_, i) => i !== index) });
   };
+
+  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 size={40} className="text-gold-500 animate-spin" /></div>;
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -1771,170 +1592,84 @@ function AboutTab() {
         <h1 className="font-serif text-3xl text-stone-800">About Me</h1>
         <p className="font-sans text-stone-400 text-sm mt-1">Manage your professional profile and biography</p>
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Image & Quick Info */}
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden p-6">
             <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-4 block">Profile Image</label>
             <div className="relative group aspect-[3/4] rounded-lg overflow-hidden mb-4">
               <img src={aboutData.image} alt="Profile" className="w-full h-full object-cover" />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white gap-2"
-              >
+              <button onClick={() => fileInputRef.current?.click()} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white gap-2">
                 {uploadingAbout ? <Loader2 className="animate-spin" /> : <Upload size={20} />}
                 <span className="text-sm font-medium">Change Photo</span>
               </button>
             </div>
             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
-            
             <div className="space-y-4 pt-2">
               <div>
                 <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-1.5 block">Photographer Name</label>
-                <input
-                  type="text"
-                  value={aboutData.name}
-                  onChange={(e) => setAboutData({ ...aboutData, name: e.target.value })}
-                  className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm font-sans"
-                />
+                <input type="text" value={aboutData.name} onChange={(e) => updateSettings({ ...aboutData, name: e.target.value })} className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm font-sans" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-1.5 block">Since (Year)</label>
-                  <input
-                    type="text"
-                    value={aboutData.since}
-                    onChange={(e) => setAboutData({ ...aboutData, since: e.target.value })}
-                    className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm font-sans"
-                  />
+                  <input type="text" value={aboutData.since} onChange={(e) => updateSettings({ ...aboutData, since: e.target.value })} className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm font-sans" />
                 </div>
                 <div>
                   <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-1.5 block">Location</label>
-                  <input
-                    type="text"
-                    value={aboutData.location}
-                    onChange={(e) => setAboutData({ ...aboutData, location: e.target.value })}
-                    className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm font-sans"
-                  />
+                  <input type="text" value={aboutData.location} onChange={(e) => updateSettings({ ...aboutData, location: e.target.value })} className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm font-sans" />
                 </div>
               </div>
             </div>
           </div>
-
           <div className="bg-white rounded-xl border border-stone-200 shadow-sm p-6">
             <h3 className="font-serif text-lg text-stone-800 border-b border-stone-100 pb-3 mb-4">Stats</h3>
             <div className="space-y-4">
               {aboutData.stats.map((stat, idx) => (
                 <div key={idx} className="grid grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    value={stat.value}
-                    onChange={(e) => {
-                      const newStats = [...aboutData.stats];
-                      newStats[idx].value = e.target.value;
-                      setAboutData({ ...aboutData, stats: newStats });
-                    }}
-                    placeholder="Value (e.g. 8+)"
-                    className="border border-stone-200 rounded-lg px-3 py-2 text-sm font-sans"
-                  />
-                  <input
-                    type="text"
-                    value={stat.label}
-                    onChange={(e) => {
-                      const newStats = [...aboutData.stats];
-                      newStats[idx].label = e.target.value;
-                      setAboutData({ ...aboutData, stats: newStats });
-                    }}
-                    placeholder="Label"
-                    className="border border-stone-200 rounded-lg px-3 py-2 text-sm font-sans"
-                  />
+                  <input type="text" value={stat.value} onChange={(e) => { const newStats = [...aboutData.stats]; newStats[idx].value = e.target.value; updateSettings({ ...aboutData, stats: newStats }); }} placeholder="Value" className="border border-stone-200 rounded-lg px-3 py-2 text-sm font-sans" />
+                  <input type="text" value={stat.label} onChange={(e) => { const newStats = [...aboutData.stats]; newStats[idx].label = e.target.value; updateSettings({ ...aboutData, stats: newStats }); }} placeholder="Label" className="border border-stone-200 rounded-lg px-3 py-2 text-sm font-sans" />
                 </div>
               ))}
             </div>
           </div>
         </div>
-
-        {/* Right Column - Bio & Specialties */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-xl border border-stone-200 shadow-sm p-8 space-y-5">
             <h3 className="font-serif text-lg text-stone-800 border-b border-stone-100 pb-3">Biography</h3>
-            
             <div>
               <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Heading Subtitle</label>
-              <input
-                type="text"
-                value={aboutData.subtitle}
-                onChange={(e) => setAboutData({ ...aboutData, subtitle: e.target.value })}
-                className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700"
-              />
+              <input type="text" value={aboutData.subtitle} onChange={(e) => updateSettings({ ...aboutData, subtitle: e.target.value })} className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700" />
             </div>
-
             <div>
               <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Main Heading</label>
-              <input
-                type="text"
-                value={aboutData.title}
-                onChange={(e) => setAboutData({ ...aboutData, title: e.target.value })}
-                className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700"
-              />
+              <input type="text" value={aboutData.title} onChange={(e) => updateSettings({ ...aboutData, title: e.target.value })} className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700" />
             </div>
-
             <div>
               <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Bio Paragraph 1</label>
-              <textarea
-                value={aboutData.description1}
-                onChange={(e) => setAboutData({ ...aboutData, description1: e.target.value })}
-                rows={4}
-                className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700"
-              />
+              <textarea value={aboutData.description1} onChange={(e) => updateSettings({ ...aboutData, description1: e.target.value })} rows={4} className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700" />
             </div>
-
             <div>
               <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Bio Paragraph 2</label>
-              <textarea
-                value={aboutData.description2}
-                onChange={(e) => setAboutData({ ...aboutData, description2: e.target.value })}
-                rows={4}
-                className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700"
-              />
+              <textarea value={aboutData.description2} onChange={(e) => updateSettings({ ...aboutData, description2: e.target.value })} rows={4} className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700" />
             </div>
           </div>
-
           <div className="bg-white rounded-xl border border-stone-200 shadow-sm p-8">
             <h3 className="font-serif text-lg text-stone-800 border-b border-stone-100 pb-3 mb-5">Specialties</h3>
-            
             <div className="flex flex-wrap gap-2 mb-4">
               {aboutData.specialties.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-2 bg-stone-100 px-3 py-1.5 rounded-full text-stone-600 text-sm">
                   {item}
-                  <button onClick={() => removeSpecialty(idx)} className="hover:text-red-500">
-                    <XCircle size={14} />
-                  </button>
+                  <button onClick={() => removeSpecialty(idx)} className="hover:text-red-500"><XCircle size={14} /></button>
                 </div>
               ))}
             </div>
-
             <div className="flex gap-2">
-              <input
-                type="text"
-                value={newSpecialty}
-                onChange={(e) => setNewSpecialty(e.target.value)}
-                placeholder="Add new specialty..."
-                onKeyPress={(e) => e.key === 'Enter' && addSpecialty()}
-                className="flex-1 border border-stone-200 rounded-lg px-4 py-2 text-sm"
-              />
-              <button onClick={addSpecialty} className="p-2 bg-gold-500 text-white rounded-lg hover:bg-gold-600 transition-colors">
-                <PlusCircle size={20} />
-              </button>
+              <input type="text" value={newSpecialty} onChange={(e) => setNewSpecialty(e.target.value)} placeholder="Add new specialty..." onKeyPress={(e) => e.key === 'Enter' && addSpecialty()} className="flex-1 border border-stone-200 rounded-lg px-4 py-2 text-sm" />
+              <button onClick={addSpecialty} className="p-2 bg-gold-500 text-white rounded-lg hover:bg-gold-600"><PlusCircle size={20} /></button>
             </div>
           </div>
-
           <div className="flex justify-end pt-4">
-            <button onClick={handleSave} className="btn-gold flex items-center gap-2">
-              <Check size={18} />
-              Save All Profile Changes
-            </button>
+            <button onClick={handleSave} className="btn-gold flex items-center gap-2"><Check size={18} />Save All Profile Changes</button>
           </div>
         </div>
       </div>
@@ -1942,10 +1677,11 @@ function AboutTab() {
   );
 }
 
+
 /* ─────────────── Reviews Tab ─────────────── */
 function ReviewsTab() {
   const { showToast } = useToast();
-  const [reviews, setReviews] = useState<Testimonial[]>(loadTestimonials());
+  const { data: reviews, loading, updateSettings } = useSiteSettings<Testimonial[]>('testimonials_data', []);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Testimonial>>({
     name: '',
@@ -1957,7 +1693,7 @@ function ReviewsTab() {
     event: '',
   });
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!formData.name || !formData.review) {
       showToast('error', 'Name and review are required');
       return;
@@ -1967,20 +1703,30 @@ function ReviewsTab() {
       name: formData.name || '',
       role: formData.role || 'Client',
       location: formData.location || '',
-      avatar: formData.avatar || 'https://placehold.co/100',
+      avatar: formData.avatar || 'https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg?auto=compress&cs=tinysrgb&w=150',
       review: formData.review || '',
       rating: formData.rating || 5,
       event: formData.event || '',
     };
     const updated = [...reviews, newReview];
-    setReviews(updated);
-    saveTestimonials(updated);
-    setFormData({ name: '', role: '', location: '', avatar: '', review: '', rating: 5, event: '' });
-    showToast('success', 'Review added successfully!');
+    try {
+      await updateSettings(updated);
+      setFormData({ name: '', role: '', location: '', avatar: '', review: '', rating: 5, event: '' });
+      showToast('success', 'Review added successfully!');
+    } catch (err) {
+      showToast('error', 'Failed to add review');
+    }
   };
 
-  const handleEdit = (review: Testimonial) => {
-    setEditingId(review.id);
+  const handleDelete = async (id: string) => {
+    const updated = reviews.filter((r) => r.id !== id);
+    try {
+      await updateSettings(updated);
+      showToast('success', 'Review deleted!');
+    } catch (err) {
+      showToast('error', 'Failed to delete review');
+    }
+  };
     setFormData(review);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };

@@ -158,17 +158,49 @@ export interface Database {
           created_at?: string;
         };
       };
-    };
-    Views: {
-      [_ in never]: never;
-    };
-    Functions: {
-      [_ in never]: never;
-    };
-    Enums: {
-      [_ in never]: never;
+      site_settings: {
+        Row: {
+          key: string;
+          value: any;
+          updated_at: string;
+        };
+        Insert: {
+          key: string;
+          value: any;
+          updated_at?: string;
+        };
+        Update: {
+          key?: string;
+          value?: any;
+          updated_at?: string;
+        };
+      };
     };
   };
+}
+
+export interface SiteSettings {
+  key: 'hero_data' | 'about_data' | 'testimonials_data';
+  value: any;
+}
+
+export interface Stat {
+  icon: string;
+  value: string;
+  label: string;
+}
+
+export interface AboutData {
+  name: string;
+  subtitle: string;
+  title: string;
+  description1: string;
+  description2: string;
+  since: string;
+  location: string;
+  image: string;
+  specialties: string[];
+  stats: Stat[];
 }
 
 export interface PackageFeature {

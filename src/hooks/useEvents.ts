@@ -63,6 +63,21 @@ export function useEvents() {
 
   useEffect(() => {
     fetchEvents();
+
+    // Subscribe to real-time changes
+    const eventsSubscription = supabase
+      .channel('public:events')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, () => {
+        fetchEvents();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'gallery_images' }, () => {
+        fetchEvents();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(eventsSubscription);
+    };
   }, [fetchEvents]);
 
   return { events, loading, error, refetch: fetchEvents };

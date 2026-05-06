@@ -1,7 +1,9 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
-import { Camera, Award, Heart, Star } from 'lucide-react';
+import { Camera, Award, Heart, Star, Loader2 } from 'lucide-react';
 import dassPhoto from '../images/1778045046784.jpg';
+import { useSiteSettings } from '../hooks/useSiteSettings';
+import type { AboutData } from '../types/database';
 
 const iconMap = {
   Camera,
@@ -36,21 +38,17 @@ const defaultAboutData = {
 };
 
 export default function About() {
-  const ref = useRef(null);
+  const ref = useRef<HTMLElement>(null);
   const inView = useInView(ref, { once: true, margin: '-80px' });
-  const [aboutData, setAboutData] = useState(defaultAboutData);
+  const { data: aboutData, loading } = useSiteSettings<AboutData>('about_data', defaultAboutData);
 
-  useEffect(() => {
-    const stored = localStorage.getItem('dj_about_data');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setAboutData({ ...defaultAboutData, ...parsed });
-      } catch (e) {
-        console.error('Error parsing about data', e);
-      }
-    }
-  }, []);
+  if (loading) {
+    return (
+      <section id="about" className="py-24 bg-cream-50 flex items-center justify-center min-h-[400px]">
+        <Loader2 size={40} className="text-gold-500 animate-spin" />
+      </section>
+    );
+  }
 
   return (
     <section id="about" className="py-24 bg-cream-50" ref={ref}>

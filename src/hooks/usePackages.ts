@@ -42,6 +42,18 @@ export function usePackages() {
 
   useEffect(() => {
     fetchPackages();
+
+    // Subscribe to real-time changes
+    const packagesSubscription = supabase
+      .channel('public:packages')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'packages' }, () => {
+        fetchPackages();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(packagesSubscription);
+    };
   }, [fetchPackages]);
 
   return { packages, loading, error, refetch: fetchPackages };

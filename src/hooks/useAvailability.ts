@@ -43,6 +43,17 @@ export function useAvailability() {
 
   useEffect(() => {
     fetchAvailability();
+
+    const subscription = supabase
+      .channel('public:availability')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'availability' }, () => {
+        fetchAvailability();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, [fetchAvailability]);
 
   return { availability, loading, error, refetch: fetchAvailability };

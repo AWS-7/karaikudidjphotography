@@ -1,31 +1,27 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
-import { Star, ChevronLeft, ChevronRight, Quote } from 'lucide-react';
+import { Star, ChevronLeft, ChevronRight, Quote, Loader2 } from 'lucide-react';
 import { testimonials as defaultTestimonials, type Testimonial } from '../data/testimonials';
-
-function loadTestimonials(): Testimonial[] {
-  try {
-    const stored = localStorage.getItem('dj_testimonials');
-    if (stored) return JSON.parse(stored);
-  } catch { /* ignore */ }
-  return defaultTestimonials;
-}
+import { useSiteSettings } from '../hooks/useSiteSettings';
 
 export default function Testimonials() {
-  const ref = useRef(null);
+  const ref = useRef<HTMLElement>(null);
   const inView = useInView(ref, { once: true, margin: '-80px' });
   const [current, setCurrent] = useState(0);
-  const [testimonialsList, setTestimonialsList] = useState<Testimonial[]>(loadTestimonials);
+  const { data: testimonialsList, loading } = useSiteSettings<Testimonial[]>('testimonials_data', defaultTestimonials);
 
-  // Re-load from localStorage on mount and when window gets focus
-  useEffect(() => {
-    const handleFocus = () => setTestimonialsList(loadTestimonials());
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, []);
+  const prev = () => setCurrent((c) => (c - 1 + (testimonialsList?.length || 0)) % (testimonialsList?.length || 1));
+  const next = () => setCurrent((c) => (c + 1) % (testimonialsList?.length || 1));
 
-  const prev = () => setCurrent((c) => (c - 1 + testimonialsList.length) % testimonialsList.length);
-  const next = () => setCurrent((c) => (c + 1) % testimonialsList.length);
+  if (loading) {
+    return (
+      <section className="py-24 bg-stone-900 flex items-center justify-center min-h-[400px]">
+        <Loader2 size={40} className="text-gold-500 animate-spin" />
+      </section>
+    );
+  }
+
+  if (!testimonialsList || testimonialsList.length === 0) return null;
 
   const t = testimonialsList[current];
 

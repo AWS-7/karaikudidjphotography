@@ -48,6 +48,17 @@ export function useEnquiries() {
 
   useEffect(() => {
     fetchEnquiries();
+
+    const subscription = supabase
+      .channel('public:enquiries')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'enquiries' }, () => {
+        fetchEnquiries();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, [fetchEnquiries]);
 
   return { enquiries, loading, error, refetch: fetchEnquiries };

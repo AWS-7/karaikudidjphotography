@@ -1,8 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, MessageCircle, Images } from 'lucide-react';
+import { ChevronDown, MessageCircle, Images, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-
-const HERO_STORAGE_KEY = 'dj_hero_data';
+import { useSiteSettings } from '../hooks/useSiteSettings';
 
 const DEFAULT_HERO = {
   subtitle: 'DJ Photography',
@@ -18,46 +17,11 @@ const DEFAULT_HERO = {
   bgImages: ['https://images.pexels.com/photos/1456613/pexels-photo-1456613.jpeg?auto=compress&cs=tinysrgb&w=1920'],
 };
 
-function loadHeroData() {
-  try {
-    const stored = localStorage.getItem(HERO_STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      return {
-        ...DEFAULT_HERO,
-        ...parsed,
-        bgImages: parsed.bgImages || [parsed.bgImage || DEFAULT_HERO.bgImage]
-      };
-    }
-  } catch { /* ignore */ }
-  return DEFAULT_HERO;
-}
-
 export default function Hero() {
-  const [heroData, setHeroData] = useState(loadHeroData());
+  const { data: heroData, loading } = useSiteSettings('hero_data', DEFAULT_HERO);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const images = heroData.bgImages || [heroData.bgImage];
-
-  useEffect(() => {
-    const handleFocus = () => setHeroData(loadHeroData());
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === HERO_STORAGE_KEY) {
-        setHeroData(loadHeroData());
-      }
-    };
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('storage', handleStorage);
-    
-    // Poll for changes as a fallback
-    const interval = setInterval(() => setHeroData(loadHeroData()), 2000);
-
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('storage', handleStorage);
-      clearInterval(interval);
-    };
-  }, []);
+  const images = heroData.bgImages || [heroData.bgImage || DEFAULT_HERO.bgImage];
 
   // Slider effect
   useEffect(() => {
@@ -77,7 +41,15 @@ export default function Hero() {
     document.getElementById('gallery')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const titleParts = heroData.title.split('Light');
+  if (loading) {
+    return (
+      <section className="relative w-full h-[85vh] sm:h-screen flex items-center justify-center bg-stone-900">
+        <Loader2 size={48} className="text-gold-500 animate-spin" />
+      </section>
+    );
+  }
+
+  const titleParts = (heroData.title || DEFAULT_HERO.title).split('Light');
 
   return (
     <section className="relative w-full h-[85vh] sm:h-screen min-h-[500px] sm:min-h-[600px] overflow-hidden bg-stone-900">
