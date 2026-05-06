@@ -3,11 +3,12 @@ import { supabase } from '../lib/supabase';
 
 export function useSiteSettings<T>(key: 'hero_data' | 'about_data' | 'testimonials_data', defaultValue: T) {
   const [data, setData] = useState<T>(defaultValue);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
-      setLoading(true);
+      // Only show loading if we don't have data yet (not using default)
+      // Actually, since we have defaultValue, we can just fetch in background
       const { data: settings, error } = await supabase
         .from('site_settings')
         .select('value')

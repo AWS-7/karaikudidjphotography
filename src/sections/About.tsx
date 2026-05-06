@@ -39,16 +39,20 @@ const defaultAboutData = {
 
 export default function About() {
   const ref = useRef<HTMLElement>(null);
-  const inView = useInView(ref, { once: true, margin: '-80px' });
-  const { data: aboutData, loading } = useSiteSettings<AboutData>('about_data', defaultAboutData);
+  const inView = useInView(ref, { once: true, margin: '-50px' });
+  const { data: aboutData } = useSiteSettings<AboutData>('about_data', defaultAboutData);
 
-  if (loading) {
-    return (
-      <section id="about" className="py-24 bg-cream-50 flex items-center justify-center min-h-[400px]">
-        <Loader2 size={40} className="text-gold-500 animate-spin" />
-      </section>
-    );
-  }
+  // Safety fallbacks
+  const stats = aboutData?.stats || defaultAboutData.stats;
+  const specialties = aboutData?.specialties || defaultAboutData.specialties;
+  const name = aboutData?.name || defaultAboutData.name;
+  const subtitle = aboutData?.subtitle || defaultAboutData.subtitle;
+  const title = aboutData?.title || defaultAboutData.title;
+  const description1 = aboutData?.description1 || defaultAboutData.description1;
+  const description2 = aboutData?.description2 || defaultAboutData.description2;
+  const since = aboutData?.since || defaultAboutData.since;
+  const location = aboutData?.location || defaultAboutData.location;
+  const image = aboutData?.image || defaultAboutData.image;
 
   return (
     <section id="about" className="py-24 bg-cream-50" ref={ref}>
@@ -56,19 +60,22 @@ export default function About() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           {/* Image Column */}
           <motion.div
-            initial={{ opacity: 0, x: -50 }}
+            initial={{ opacity: 0, x: -30 }}
             animate={inView ? { opacity: 1, x: 0 } : {}}
-            transition={{ duration: 0.9, ease: 'easeOut' }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
             className="relative"
           >
             <div className="relative">
               {/* Decorative frame */}
               <div className="absolute -top-2 -left-2 sm:-top-4 sm:-left-4 w-full h-full border-2 border-gold-300 rounded-lg z-0" />
-              <div className="relative z-10 rounded-lg overflow-hidden shadow-2xl">
+              <div className="relative z-10 rounded-lg overflow-hidden shadow-2xl bg-stone-200">
                 <img
-                  src={aboutData.image}
-                  alt={`${aboutData.name} - DJ Photography Karaikudi`}
-                  className="w-full h-[420px] sm:h-[450px] lg:h-[560px] object-cover object-top"
+                  src={image}
+                  alt={`${name} - DJ Photography Karaikudi`}
+                  className="w-full h-[420px] sm:h-[450px] lg:h-[560px] object-cover object-top transition-opacity duration-500"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = dassPhoto;
+                  }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
               </div>
@@ -76,13 +83,13 @@ export default function About() {
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={inView ? { opacity: 1, scale: 1 } : {}}
-                transition={{ delay: 0.5, duration: 0.6 }}
+                transition={{ delay: 0.4, duration: 0.5 }}
                 className="absolute -bottom-4 -right-2 sm:-bottom-6 sm:-right-6 bg-white rounded-xl shadow-2xl p-3 sm:p-5 border border-cream-200 z-20"
               >
                 <div className="text-center">
                   <div className="font-script text-gold-500 text-2xl sm:text-3xl">Since</div>
-                  <div className="font-serif text-stone-800 text-3xl sm:text-4xl font-semibold leading-none">{aboutData.since}</div>
-                  <div className="font-sans text-stone-400 text-xs tracking-widest uppercase mt-1">{aboutData.location}</div>
+                  <div className="font-serif text-stone-800 text-3xl sm:text-4xl font-semibold leading-none">{since}</div>
+                  <div className="font-sans text-stone-400 text-xs tracking-widest uppercase mt-1">{location}</div>
                 </div>
               </motion.div>
             </div>
@@ -90,29 +97,29 @@ export default function About() {
 
           {/* Text Column */}
           <motion.div
-            initial={{ opacity: 0, x: 50 }}
+            initial={{ opacity: 0, x: 30 }}
             animate={inView ? { opacity: 1, x: 0 } : {}}
-            transition={{ duration: 0.9, ease: 'easeOut', delay: 0.2 }}
+            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.1 }}
             className="space-y-8"
           >
             <div>
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 15 }}
                 animate={inView ? { opacity: 1, y: 0 } : {}}
-                transition={{ delay: 0.1, duration: 0.6 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
                 className="inline-flex items-center gap-3 mb-4"
               >
                 <span className="h-px w-12 bg-gold-400" />
                 <span className="font-sans text-gold-600 text-xs tracking-[0.3em] uppercase font-semibold">
-                  {aboutData.subtitle}
+                  {subtitle}
                 </span>
                 <span className="h-px w-12 bg-gold-400" />
               </motion.div>
 
               <motion.h2
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={inView ? { opacity: 1, y: 0 } : {}}
-                transition={{ delay: 0.3, duration: 0.8 }}
+                transition={{ delay: 0.3, duration: 0.6 }}
                 className="font-serif text-4xl sm:text-5xl md:text-6xl font-light text-stone-800 leading-tight"
               >
                 About{' '}
@@ -121,7 +128,7 @@ export default function About() {
                   <motion.span
                     initial={{ scaleX: 0 }}
                     animate={inView ? { scaleX: 1 } : {}}
-                    transition={{ delay: 0.8, duration: 0.6 }}
+                    transition={{ delay: 0.6, duration: 0.5 }}
                     className="absolute -bottom-1 left-0 right-0 h-1 bg-gold-300 origin-left rounded-full"
                   />
                 </span>
@@ -130,30 +137,30 @@ export default function About() {
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={inView ? { opacity: 1 } : {}}
-                transition={{ delay: 0.5, duration: 0.6 }}
+                transition={{ delay: 0.4, duration: 0.5 }}
                 className="font-sans text-stone-400 text-sm mt-4 tracking-wide"
               >
-                {aboutData.title}
+                {title}
               </motion.p>
 
               <motion.span
                 initial={{ scaleX: 0 }}
                 animate={inView ? { scaleX: 1 } : {}}
-                transition={{ delay: 0.6, duration: 0.5 }}
+                transition={{ delay: 0.5, duration: 0.5 }}
                 className="gold-divider !mx-0 mt-6 origin-left"
               />
             </div>
 
             <p className="font-serif text-stone-600 text-lg leading-relaxed">
-              {aboutData.description1}
+              {description1}
             </p>
 
             <p className="font-sans text-stone-500 text-base leading-relaxed">
-              {aboutData.description2}
+              {description2}
             </p>
 
             <div className="grid grid-cols-2 gap-4">
-              {aboutData.specialties.map((item) => (
+              {specialties.map((item) => (
                 <div key={item} className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-gold-500 flex-shrink-0" />
                   <span className="font-sans text-stone-600 text-sm">{item}</span>
@@ -182,12 +189,12 @@ export default function About() {
 
         {/* Stats Row */}
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.7, delay: 0.5 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
           className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mt-12 sm:mt-20"
         >
-          {aboutData.stats.map((stat) => {
+          {stats.map((stat) => {
             const Icon = iconMap[stat.icon as keyof typeof iconMap] || Camera;
             return (
               <div

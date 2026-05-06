@@ -8,18 +8,10 @@ export default function Testimonials() {
   const ref = useRef<HTMLElement>(null);
   const inView = useInView(ref, { once: true, margin: '-80px' });
   const [current, setCurrent] = useState(0);
-  const { data: testimonialsList, loading } = useSiteSettings<Testimonial[]>('testimonials_data', defaultTestimonials);
+  const { data: testimonialsList } = useSiteSettings<Testimonial[]>('testimonials_data', defaultTestimonials);
 
   const prev = () => setCurrent((c) => (c - 1 + (testimonialsList?.length || 0)) % (testimonialsList?.length || 1));
   const next = () => setCurrent((c) => (c + 1) % (testimonialsList?.length || 1));
-
-  if (loading) {
-    return (
-      <section className="py-24 bg-stone-900 flex items-center justify-center min-h-[400px]">
-        <Loader2 size={40} className="text-gold-500 animate-spin" />
-      </section>
-    );
-  }
 
   if (!testimonialsList || testimonialsList.length === 0) return null;
 

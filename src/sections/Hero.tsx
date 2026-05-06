@@ -2,8 +2,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, MessageCircle, Images, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useSiteSettings } from '../hooks/useSiteSettings';
+import type { HeroData } from '../types/database';
 
-const DEFAULT_HERO = {
+const DEFAULT_HERO: HeroData = {
   subtitle: 'DJ Photography',
   title: 'Capturing Love, Light & Emotion',
   tagline: 'Professional Wedding Photographer & Cinematographer',
@@ -18,7 +19,7 @@ const DEFAULT_HERO = {
 };
 
 export default function Hero() {
-  const { data: heroData, loading } = useSiteSettings('hero_data', DEFAULT_HERO);
+  const { data: heroData } = useSiteSettings<HeroData>('hero_data', DEFAULT_HERO);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const images = heroData.bgImages || [heroData.bgImage || DEFAULT_HERO.bgImage];
@@ -40,14 +41,6 @@ export default function Hero() {
   const scrollToGallery = () => {
     document.getElementById('gallery')?.scrollIntoView({ behavior: 'smooth' });
   };
-
-  if (loading) {
-    return (
-      <section className="relative w-full h-[85vh] sm:h-screen flex items-center justify-center bg-stone-900">
-        <Loader2 size={48} className="text-gold-500 animate-spin" />
-      </section>
-    );
-  }
 
   const titleParts = (heroData.title || DEFAULT_HERO.title).split('Light');
 
