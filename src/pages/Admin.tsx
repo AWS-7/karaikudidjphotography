@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
@@ -22,6 +22,8 @@ import {
   LogOut,
   Loader2,
   ImageIcon,
+  Home,
+  MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useEvents, createEvent, deleteEvent } from '../hooks/useEvents';
@@ -29,8 +31,21 @@ import { usePackages } from '../hooks/usePackages';
 import { useImageUpload } from '../hooks/useImages';
 import { useToast } from '../contexts/ToastContext';
 import type { Event } from '../types/database';
+import { testimonials as testimonialsData } from '../data/testimonials';
 
-type Tab = 'dashboard' | 'gallery' | 'add-event' | 'upload' | 'packages' | 'settings';
+// Testimonial type for reviews management
+interface Testimonial {
+  id: string;
+  name: string;
+  role: string;
+  location: string;
+  avatar: string;
+  review: string;
+  rating: number;
+  event: string;
+}
+
+type Tab = 'dashboard' | 'gallery' | 'add-event' | 'upload' | 'packages' | 'hero' | 'reviews' | 'settings';
 
 const navItems: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -38,6 +53,8 @@ const navItems: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'add-event', label: 'Add Event', icon: PlusCircle },
   { id: 'upload', label: 'Upload Images', icon: Upload },
   { id: 'packages', label: 'Packages', icon: Package },
+  { id: 'hero', label: 'Hero Section', icon: Home },
+  { id: 'reviews', label: 'Reviews', icon: MessageSquare },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
@@ -264,6 +281,8 @@ export default function Admin() {
               {activeTab === 'add-event' && <AddEventTab />}
               {activeTab === 'upload' && <UploadTab dragOver={dragOver} setDragOver={setDragOver} />}
               {activeTab === 'packages' && <PackagesTab />}
+              {activeTab === 'hero' && <HeroTab />}
+              {activeTab === 'reviews' && <ReviewsTab />}
               {activeTab === 'settings' && <SettingsTab />}
             </motion.div>
           </AnimatePresence>
@@ -604,7 +623,7 @@ function AddEventTab() {
 
 /* ─────────────── Upload Tab ─────────────── */
 function UploadTab({ dragOver, setDragOver }: { dragOver: boolean; setDragOver: (v: boolean) => void }) {
-  const { events, loading: eventsLoading } = useEvents();
+  const { events } = useEvents();
   const { showToast } = useToast();
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [uploadQueue, setUploadQueue] = useState<{ file: File; status: 'pending' | 'uploading' | 'done' | 'error' }[]>([]);
@@ -826,6 +845,291 @@ function PackagesTab() {
               <button className="p-2 rounded-lg bg-stone-50 hover:bg-stone-100 text-stone-500 transition-colors">
                 <MoreHorizontal size={15} />
               </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────── Hero Tab ─────────────── */
+function HeroTab() {
+  const { showToast } = useToast();
+  const [heroData, setHeroData] = useState({
+    subtitle: 'DJ Photography',
+    title: 'Capturing Love, Light & Emotion',
+    tagline: 'Professional Wedding Photographer & Cinematographer',
+    stat1Value: '8+',
+    stat1Label: 'Years Experience',
+    stat2Value: '1500+',
+    stat2Label: 'Weddings',
+    stat3Value: '100%',
+    stat3Label: 'Happy Clients',
+    bgImage: 'https://images.pexels.com/photos/1456613/pexels-photo-1456613.jpeg?auto=compress&cs=tinysrgb&w=1920',
+  });
+
+  const handleSave = () => {
+    showToast('success', 'Hero section updated successfully!');
+  };
+
+  return (
+    <div className="space-y-6 max-w-3xl">
+      <div>
+        <h1 className="font-serif text-3xl text-stone-800">Hero Section</h1>
+        <p className="font-sans text-stone-400 text-sm mt-1">Edit your homepage hero banner content</p>
+      </div>
+
+      {/* Preview */}
+      <div className="relative rounded-xl overflow-hidden h-48 sm:h-64">
+        <img src={heroData.bgImage} alt="Hero preview" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-6">
+          <div>
+            <p className="font-script text-gold-300 text-lg">{heroData.subtitle}</p>
+            <h3 className="font-serif text-white text-xl sm:text-2xl">{heroData.title}</h3>
+          </div>
+        </div>
+      </div>
+
+      {/* Form */}
+      <div className="bg-white rounded-xl border border-stone-200 shadow-sm p-8 space-y-5">
+        <h3 className="font-serif text-lg text-stone-800 border-b border-stone-100 pb-3">Hero Content</h3>
+
+        <div>
+          <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Background Image URL</label>
+          <input
+            type="url"
+            value={heroData.bgImage}
+            onChange={(e) => setHeroData({ ...heroData, bgImage: e.target.value })}
+            className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Subtitle (Script)</label>
+            <input
+              type="text"
+              value={heroData.subtitle}
+              onChange={(e) => setHeroData({ ...heroData, subtitle: e.target.value })}
+              className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors"
+            />
+          </div>
+          <div>
+            <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Tagline</label>
+            <input
+              type="text"
+              value={heroData.tagline}
+              onChange={(e) => setHeroData({ ...heroData, tagline: e.target.value })}
+              className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Main Title</label>
+          <input
+            type="text"
+            value={heroData.title}
+            onChange={(e) => setHeroData({ ...heroData, title: e.target.value })}
+            className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors"
+          />
+        </div>
+
+        <h3 className="font-serif text-lg text-stone-800 border-b border-stone-100 pb-3 pt-2">Stats</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          {[
+            { valueKey: 'stat1Value', labelKey: 'stat1Label', title: 'Stat 1' },
+            { valueKey: 'stat2Value', labelKey: 'stat2Label', title: 'Stat 2' },
+            { valueKey: 'stat3Value', labelKey: 'stat3Label', title: 'Stat 3' },
+          ].map((stat) => (
+            <div key={stat.title} className="space-y-3">
+              <label className="font-sans text-xs text-stone-500 font-medium">{stat.title}</label>
+              <input
+                type="text"
+                value={heroData[stat.valueKey as keyof typeof heroData]}
+                onChange={(e) => setHeroData({ ...heroData, [stat.valueKey]: e.target.value })}
+                placeholder="Value"
+                className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 transition-colors"
+              />
+              <input
+                type="text"
+                value={heroData[stat.labelKey as keyof typeof heroData]}
+                onChange={(e) => setHeroData({ ...heroData, [stat.labelKey]: e.target.value })}
+                placeholder="Label"
+                className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 transition-colors"
+              />
+            </div>
+          ))}
+        </div>
+
+        <button onClick={handleSave} className="btn-gold text-xs flex items-center gap-2">
+          <Check size={14} />
+          Save Hero Changes
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────── Reviews Tab ─────────────── */
+function ReviewsTab() {
+  const { showToast } = useToast();
+  const [reviews, setReviews] = useState<Testimonial[]>(testimonialsData);
+  const [editingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState<Partial<Testimonial>>({
+    name: '',
+    role: '',
+    location: '',
+    avatar: '',
+    review: '',
+    rating: 5,
+    event: '',
+  });
+
+  const handleAdd = () => {
+    if (!formData.name || !formData.review) {
+      showToast('error', 'Name and review are required');
+      return;
+    }
+    const newReview: Testimonial = {
+      id: Date.now().toString(),
+      name: formData.name || '',
+      role: formData.role || 'Client',
+      location: formData.location || '',
+      avatar: formData.avatar || 'https://placehold.co/100',
+      review: formData.review || '',
+      rating: formData.rating || 5,
+      event: formData.event || '',
+    };
+    setReviews([...reviews, newReview]);
+    setFormData({ name: '', role: '', location: '', avatar: '', review: '', rating: 5, event: '' });
+    showToast('success', 'Review added successfully!');
+  };
+
+  const handleDelete = (id: string) => {
+    if (!confirm('Delete this review?')) return;
+    setReviews(reviews.filter((r) => r.id !== id));
+    showToast('success', 'Review deleted');
+  };
+
+  return (
+    <div className="space-y-6 max-w-4xl">
+      <div>
+        <h1 className="font-serif text-3xl text-stone-800">Reviews & Testimonials</h1>
+        <p className="font-sans text-stone-400 text-sm mt-1">Manage client testimonials displayed on your site</p>
+      </div>
+
+      {/* Add Review Form */}
+      <div className="bg-white rounded-xl border border-stone-200 shadow-sm p-8 space-y-5">
+        <h3 className="font-serif text-lg text-stone-800 border-b border-stone-100 pb-3">
+          {editingId ? 'Edit Review' : 'Add New Review'}
+        </h3>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Client Name *</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="e.g. Karthik & Meena"
+              className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 transition-colors"
+            />
+          </div>
+          <div>
+            <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Event Type</label>
+            <input
+              type="text"
+              value={formData.event}
+              onChange={(e) => setFormData({ ...formData, event: e.target.value })}
+              placeholder="e.g. Wedding Photography"
+              className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 transition-colors"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Location</label>
+            <input
+              type="text"
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              placeholder="e.g. Karaikudi"
+              className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 transition-colors"
+            />
+          </div>
+          <div>
+            <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Rating (1-5)</label>
+            <select
+              value={formData.rating}
+              onChange={(e) => setFormData({ ...formData, rating: Number(e.target.value) })}
+              className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 transition-colors bg-white"
+            >
+              {[1, 2, 3, 4, 5].map((n) => (
+                <option key={n} value={n}>{n} Star{n > 1 ? 's' : ''}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Avatar URL</label>
+          <input
+            type="url"
+            value={formData.avatar}
+            onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
+            placeholder="https://..."
+            className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 transition-colors"
+          />
+        </div>
+
+        <div>
+          <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Review Text *</label>
+          <textarea
+            value={formData.review}
+            onChange={(e) => setFormData({ ...formData, review: e.target.value })}
+            rows={4}
+            placeholder="Client's testimonial..."
+            className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 transition-colors resize-none"
+          />
+        </div>
+
+        <button
+          onClick={handleAdd}
+          className="btn-gold text-xs flex items-center gap-2"
+        >
+          <PlusCircle size={14} />
+          Add Review
+        </button>
+      </div>
+
+      {/* Reviews List */}
+      <div className="space-y-4">
+        <h3 className="font-serif text-lg text-stone-800">All Reviews ({reviews.length})</h3>
+        {reviews.map((review) => (
+          <div key={review.id} className="bg-white rounded-xl border border-stone-200 shadow-sm p-6 flex gap-4">
+            <img src={review.avatar} alt={review.name} className="w-14 h-14 rounded-full object-cover border-2 border-gold-200 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <h4 className="font-sans font-medium text-stone-800">{review.name}</h4>
+                  <p className="font-sans text-xs text-stone-400">{review.event} · {review.location}</p>
+                  <div className="flex gap-0.5 mt-1">
+                    {Array.from({ length: review.rating }).map((_, i) => (
+                      <Star key={i} size={12} className="text-gold-500 fill-gold-500" />
+                    ))}
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleDelete(review.id)}
+                  className="p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+              <p className="font-sans text-sm text-stone-600 mt-2 line-clamp-3">"{review.review}"</p>
             </div>
           </div>
         ))}
