@@ -2,30 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Event, GalleryImage } from '../types/database';
 
-// Mock events for testing when Supabase is not configured
-const MOCK_EVENTS: Event[] = [
-  {
-    id: '1',
-    slug: 'wedding-sample',
-    name: 'Sample Wedding Event',
-    category: 'Wedding',
-    date: 'January 2024',
-    location: 'Karaikudi',
-    coverImage: 'https://images.pexels.com/photos/2253870/pexels-photo-2253870.jpeg?auto=compress&cs=tinysrgb&w=800',
-    images: [],
-  },
-  {
-    id: '2',
-    slug: 'prewedding-sample',
-    name: 'Pre-Wedding Shoot',
-    category: 'Pre-Wedding',
-    date: 'December 2023',
-    location: 'Chettinad',
-    coverImage: 'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=800',
-    images: [],
-  },
-];
-
 // Fetch all events with image count
 export function useEvents() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -78,10 +54,7 @@ export function useEvents() {
 
       setEvents(eventsWithImages);
     } catch (err) {
-      // Use mock data if Supabase fails
-      console.warn('Supabase error, using mock data:', err);
-      setEvents(MOCK_EVENTS);
-      setError(null); // Don't show error, use mock data instead
+      setError(err instanceof Error ? err.message : 'Failed to fetch events');
     } finally {
       setLoading(false);
     }

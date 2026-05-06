@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion';
 import { ChevronDown, MessageCircle, Images } from 'lucide-react';
-import { Link } from 'react-router-dom';
 
 export default function Hero() {
   const scrollToGallery = () => {
@@ -8,7 +7,7 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative w-full h-screen min-h-[600px] overflow-hidden">
+    <section className="relative w-full h-[85vh] sm:h-screen min-h-[500px] sm:min-h-[600px] overflow-hidden">
       {/* Background Image */}
       <div className="absolute inset-0 overflow-hidden">
         <img
@@ -44,7 +43,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.8 }}
-          className="font-script text-gold-300 text-3xl md:text-4xl mb-4 block"
+          className="font-script text-gold-300 text-2xl sm:text-3xl md:text-4xl mb-2 sm:mb-4 block"
         >
           DJ Photography
         </motion.span>
@@ -53,7 +52,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.9 }}
-          className="font-serif text-5xl md:text-7xl lg:text-8xl font-light text-white text-shadow max-w-5xl leading-none mb-6"
+          className="font-serif text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-light text-white text-shadow max-w-5xl leading-none mb-3 sm:mb-6 px-2 sm:px-0"
         >
           Capturing Love,{' '}
           <span className="italic text-gold-300">Light</span>{' '}
@@ -64,7 +63,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7, duration: 0.8 }}
-          className="font-sans text-cream-200 text-lg md:text-xl tracking-widest uppercase font-light mb-10 text-shadow-sm"
+          className="font-sans text-cream-200 text-sm sm:text-lg md:text-xl tracking-widest uppercase font-light mb-6 sm:mb-10 text-shadow-sm px-4 sm:px-0"
         >
           Professional Wedding Photographer &amp; Cinematographer
         </motion.p>
@@ -74,7 +73,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.9, duration: 0.7 }}
-          className="flex gap-8 md:gap-16 mb-12"
+          className="flex gap-4 sm:gap-8 md:gap-16 mb-6 sm:mb-12"
         >
           {[
             { value: '8+', label: 'Years Experience' },
@@ -82,8 +81,8 @@ export default function Hero() {
             { value: '100%', label: 'Happy Clients' },
           ].map((stat) => (
             <div key={stat.label} className="text-center">
-              <div className="font-serif text-2xl md:text-3xl text-gold-300 font-light">{stat.value}</div>
-              <div className="font-sans text-cream-300/70 text-xs tracking-widest uppercase mt-1">{stat.label}</div>
+              <div className="font-serif text-xl sm:text-2xl md:text-3xl text-gold-300 font-light">{stat.value}</div>
+              <div className="font-sans text-cream-300/70 text-[10px] sm:text-xs tracking-widest uppercase mt-1">{stat.label}</div>
             </div>
           ))}
         </motion.div>
@@ -93,11 +92,11 @@ export default function Hero() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.1, duration: 0.7 }}
-          className="flex flex-col sm:flex-row gap-4"
+          className="flex flex-col sm:flex-row gap-3 sm:gap-4 px-4 sm:px-0 w-full sm:w-auto"
         >
           <button
             onClick={scrollToGallery}
-            className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-gold-600 via-gold-500 to-gold-600 text-white font-sans text-sm tracking-widest uppercase font-medium hover:shadow-2xl hover:shadow-gold-500/40 hover:scale-105 transition-all duration-300 rounded-sm"
+            className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-gold-600 via-gold-500 to-gold-600 text-white font-sans text-xs sm:text-sm tracking-widest uppercase font-medium hover:shadow-2xl hover:shadow-gold-500/40 hover:scale-105 transition-all duration-300 rounded-sm w-full sm:w-auto"
           >
             <Images size={18} />
             View Gallery
@@ -106,7 +105,7 @@ export default function Hero() {
             href="https://wa.me/918825605403?text=Hi%20Dass!%20I%20would%20like%20to%20book%20DJ%20Photography."
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-8 py-4 border-2 border-white/80 text-white font-sans text-sm tracking-widest uppercase font-medium hover:bg-white hover:text-stone-800 transition-all duration-300 rounded-sm backdrop-blur-sm"
+            className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 border-2 border-white/80 text-white font-sans text-xs sm:text-sm tracking-widest uppercase font-medium hover:bg-white hover:text-stone-800 transition-all duration-300 rounded-sm backdrop-blur-sm w-full sm:w-auto"
           >
             <MessageCircle size={18} />
             Contact on WhatsApp

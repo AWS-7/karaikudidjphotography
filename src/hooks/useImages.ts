@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { supabase, uploadImage, getImageUrl } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 
 // Upload multiple images to an event
 export function useImageUpload() {
@@ -22,7 +22,7 @@ export function useImageUpload() {
 
           setProgress((prev) => ({ ...prev, [file.name]: 0 }));
 
-          // Try to upload to storage
+          // Upload to Supabase Storage
           const { error: uploadError } = await supabase.storage
             .from('gallery')
             .upload(storagePath, file, {
@@ -30,20 +30,14 @@ export function useImageUpload() {
               upsert: false,
             });
 
-          if (uploadError) {
-            // Mock upload for testing - use local object URL
-            console.warn('Storage upload failed, using mock URL:', uploadError);
-            const mockUrl = URL.createObjectURL(file);
-            uploadedUrls.push(mockUrl);
-            setProgress((prev) => ({ ...prev, [file.name]: 100 }));
-            continue;
-          }
+          if (uploadError) throw uploadError;
 
           // Get public URL
-          const imageUrl = getImageUrl(storagePath);
+          const { data: urlData } = supabase.storage.from('gallery').getPublicUrl(storagePath);
+          const imageUrl = urlData.publicUrl;
           uploadedUrls.push(imageUrl);
 
-          // Save to database (skip for mock)
+          // Save to database
           const { error: dbError } = await supabase.from('gallery_images').insert({
             event_id: eventId,
             image_url: imageUrl,
@@ -53,9 +47,8 @@ export function useImageUpload() {
 
           if (dbError) {
             console.warn('Database save failed:', dbError);
+            // Storage upload succeeded, so image URL is still valid
           }
-
-          setProgress((prev) => ({ ...prev, [file.name]: 100 }));
         }
 
         return uploadedUrls;

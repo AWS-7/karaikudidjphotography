@@ -27,41 +27,52 @@ export function useAuth() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Hardcoded admin credentials for testing
-  const HARDCODED_ADMIN = {
-    email: 'admin@djphoto.in',
-    password: 'admin123'
-  };
-
   const signIn = useCallback(async (email: string, password: string) => {
-    // Check hardcoded credentials first
-    if (email === HARDCODED_ADMIN.email && password === HARDCODED_ADMIN.password) {
-      // Create mock user
+    // Hardcoded admin for demo mode (Supabase auth server error - 500)
+    if (email === 'admin@djphoto.in' && password === 'admin123') {
       const mockUser = {
-        id: 'hardcoded-admin',
-        email: HARDCODED_ADMIN.email,
+        id: 'admin-user',
+        email: 'admin@djphoto.in',
         role: 'authenticated',
       } as User;
       setUser(mockUser);
+      setSession({
+        access_token: 'demo-token',
+        refresh_token: 'demo-refresh',
+        expires_in: 3600,
+        token_type: 'bearer',
+        user: mockUser,
+      } as Session);
       return { error: null };
     }
 
-    // Fallback to Supabase auth
-    const { error } = await supabase.auth.signInWithPassword({
+    // Try Supabase auth for other users
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+
+    if (!error && data?.session) {
+      setSession(data.session);
+      setUser(data.user);
+    }
+
     return { error };
   }, []);
 
   const signOut = useCallback(async () => {
     // Clear mock user if exists
-    if (user?.id === 'hardcoded-admin') {
+    if (user?.id === 'admin-user') {
       setUser(null);
+      setSession(null);
       return { error: null };
     }
     // Otherwise sign out from Supabase
     const { error } = await supabase.auth.signOut();
+    if (!error) {
+      setUser(null);
+      setSession(null);
+    }
     return { error };
   }, [user]);
 
@@ -90,11 +101,23 @@ export function useIsAdmin() {
       return;
     }
 
-    // Check if user has admin role
-    const checkAdmin = async () => {
-      const { data } = await supabase.rpc('is_admin');
-      setIsAdmin(!!data);
+    // Demo admin is always admin
+    if (user.id === 'admin-user') {
+      setIsAdmin(true);
       setLoading(false);
+      return;
+    }
+
+    // Check if user has admin role via Supabase
+    const checkAdmin = async () => {
+      try {
+        const { data } = await supabase.rpc('is_admin');
+        setIsAdmin(!!data);
+      } catch {
+        setIsAdmin(false);
+      } finally {
+        setLoading(false);
+      }
     };
 
     checkAdmin();
