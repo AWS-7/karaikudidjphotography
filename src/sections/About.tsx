@@ -1,18 +1,56 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { Camera, Award, Heart, Star } from 'lucide-react';
 import dassPhoto from '../images/1778045046784.jpg';
 
-const stats = [
-  { icon: Camera, value: '8+', label: 'Years of Experience' },
-  { icon: Heart, value: '1500+', label: 'Weddings Captured' },
-  { icon: Award, value: '50+', label: 'Awards & Recognition' },
-  { icon: Star, value: '100%', label: 'Client Satisfaction' },
-];
+const iconMap = {
+  Camera,
+  Heart,
+  Award,
+  Star,
+};
+
+const defaultAboutData = {
+  name: 'Dass',
+  subtitle: 'Get To Know Me',
+  title: 'Your Storyteller Behind the Lens in Karaikudi',
+  description1: "Based in the heart of Karaikudi, I've spent over 8 years perfecting the art of capturing life's most precious moments. Every wedding is a unique story — and I believe in telling it through candid emotions, natural light, and real moments that you'll treasure forever.",
+  description2: "From the nervous excitement of the morning preparations to the joyful tears during the ceremony, I document every layer of your wedding day with a cinematic eye and a respectful presence. My approach is unobtrusive, allowing genuine moments to unfold naturally.",
+  since: '2016',
+  location: 'Karaikudi',
+  image: dassPhoto,
+  specialties: [
+    'Candid Storytelling',
+    'Emotion-First Approach',
+    'Cinematic Filmmaking',
+    'Pre-Wedding Shoots',
+    'Chettinad Specialist',
+    'Same-Day Edits',
+  ],
+  stats: [
+    { icon: 'Camera', value: '8+', label: 'Years of Experience' },
+    { icon: 'Heart', value: '1500+', label: 'Weddings Captured' },
+    { icon: 'Award', value: '50+', label: 'Awards & Recognition' },
+    { icon: 'Star', value: '100%', label: 'Client Satisfaction' },
+  ],
+};
 
 export default function About() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '-80px' });
+  const [aboutData, setAboutData] = useState(defaultAboutData);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('dj_about_data');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setAboutData({ ...defaultAboutData, ...parsed });
+      } catch (e) {
+        console.error('Error parsing about data', e);
+      }
+    }
+  }, []);
 
   return (
     <section id="about" className="py-24 bg-cream-50" ref={ref}>
@@ -30,8 +68,8 @@ export default function About() {
               <div className="absolute -top-2 -left-2 sm:-top-4 sm:-left-4 w-full h-full border-2 border-gold-300 rounded-lg z-0" />
               <div className="relative z-10 rounded-lg overflow-hidden shadow-2xl">
                 <img
-                  src={dassPhoto}
-                  alt="Dass - DJ Photography Karaikudi"
+                  src={aboutData.image}
+                  alt={`${aboutData.name} - DJ Photography Karaikudi`}
                   className="w-full h-[420px] sm:h-[450px] lg:h-[560px] object-cover object-top"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
@@ -45,8 +83,8 @@ export default function About() {
               >
                 <div className="text-center">
                   <div className="font-script text-gold-500 text-2xl sm:text-3xl">Since</div>
-                  <div className="font-serif text-stone-800 text-3xl sm:text-4xl font-semibold leading-none">2016</div>
-                  <div className="font-sans text-stone-400 text-xs tracking-widest uppercase mt-1">Karaikudi</div>
+                  <div className="font-serif text-stone-800 text-3xl sm:text-4xl font-semibold leading-none">{aboutData.since}</div>
+                  <div className="font-sans text-stone-400 text-xs tracking-widest uppercase mt-1">{aboutData.location}</div>
                 </div>
               </motion.div>
             </div>
@@ -68,7 +106,7 @@ export default function About() {
               >
                 <span className="h-px w-12 bg-gold-400" />
                 <span className="font-sans text-gold-600 text-xs tracking-[0.3em] uppercase font-semibold">
-                  Get To Know Me
+                  {aboutData.subtitle}
                 </span>
                 <span className="h-px w-12 bg-gold-400" />
               </motion.div>
@@ -97,7 +135,7 @@ export default function About() {
                 transition={{ delay: 0.5, duration: 0.6 }}
                 className="font-sans text-stone-400 text-sm mt-4 tracking-wide"
               >
-                Your Storyteller Behind the Lens in Karaikudi
+                {aboutData.title}
               </motion.p>
 
               <motion.span
@@ -109,28 +147,15 @@ export default function About() {
             </div>
 
             <p className="font-serif text-stone-600 text-lg leading-relaxed">
-              Based in the heart of Karaikudi, I've spent over 8 years perfecting the art of
-              capturing life's most precious moments. Every wedding is a unique story — and
-              I believe in telling it through candid emotions, natural light, and real moments
-              that you'll treasure forever.
+              {aboutData.description1}
             </p>
 
             <p className="font-sans text-stone-500 text-base leading-relaxed">
-              From the nervous excitement of the morning preparations to the joyful tears
-              during the ceremony, I document every layer of your wedding day with a cinematic
-              eye and a respectful presence. My approach is unobtrusive, allowing genuine
-              moments to unfold naturally.
+              {aboutData.description2}
             </p>
 
             <div className="grid grid-cols-2 gap-4">
-              {[
-                'Candid Storytelling',
-                'Emotion-First Approach',
-                'Cinematic Filmmaking',
-                'Pre-Wedding Shoots',
-                'Chettinad Specialist',
-                'Same-Day Edits',
-              ].map((item) => (
+              {aboutData.specialties.map((item) => (
                 <div key={item} className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-gold-500 flex-shrink-0" />
                   <span className="font-sans text-stone-600 text-sm">{item}</span>
@@ -164,18 +189,21 @@ export default function About() {
           transition={{ duration: 0.7, delay: 0.5 }}
           className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mt-12 sm:mt-20"
         >
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="text-center p-4 sm:p-6 bg-white rounded-xl shadow-sm border border-cream-200 hover:shadow-md hover:border-gold-200 transition-all duration-300 group"
-            >
-              <div className="w-12 h-12 bg-cream-100 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-gold-50 transition-colors">
-                <stat.icon size={22} className="text-gold-600" />
+          {aboutData.stats.map((stat) => {
+            const Icon = iconMap[stat.icon as keyof typeof iconMap] || Camera;
+            return (
+              <div
+                key={stat.label}
+                className="text-center p-4 sm:p-6 bg-white rounded-xl shadow-sm border border-cream-200 hover:shadow-md hover:border-gold-200 transition-all duration-300 group"
+              >
+                <div className="w-12 h-12 bg-cream-100 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-gold-50 transition-colors">
+                  <Icon size={22} className="text-gold-600" />
+                </div>
+                <div className="font-serif text-3xl text-stone-800 font-light">{stat.value}</div>
+                <div className="font-sans text-stone-400 text-xs tracking-wide uppercase mt-1">{stat.label}</div>
               </div>
-              <div className="font-serif text-3xl text-stone-800 font-light">{stat.value}</div>
-              <div className="font-sans text-stone-400 text-xs tracking-wide uppercase mt-1">{stat.label}</div>
-            </div>
-          ))}
+            );
+          })}
         </motion.div>
       </div>
     </section>

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Camera } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
+import logo from '../images/1778058672282-removebg-preview.png';
 
 const navLinks = [
   { label: 'Home', to: '/' },
@@ -52,16 +53,8 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 bg-gradient-to-br from-gold-500 to-gold-700 rounded-full flex items-center justify-center shadow-lg group-hover:shadow-gold-500/40 transition-shadow">
-                <Camera size={20} className="text-white" />
-              </div>
-              <div className="flex flex-col leading-tight">
-                <span className={`font-script text-xl transition-colors duration-300 ${showSolidNav ? 'text-gold-600' : 'text-gold-300'}`}>
-                  DJ Photography
-                </span>
-                <span className={`font-sans text-xs tracking-[0.2em] uppercase transition-colors duration-300 ${showSolidNav ? 'text-stone-500' : 'text-cream-200'}`}>
-                  Karaikudi
-                </span>
+              <div className="h-14 sm:h-16 flex items-center">
+                <img src={logo} alt="DJ Photography" className="h-full w-auto object-contain" />
               </div>
             </Link>
 

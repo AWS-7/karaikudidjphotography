@@ -1,8 +1,8 @@
 import { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
-import { Eye, ArrowRight } from 'lucide-react';
+import { Eye, ArrowRight, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { packages } from '../data/packages';
+import { usePackages } from '../hooks/usePackages';
 import img1 from '../images/1778054327731.jpg';
 import img2 from '../images/1778054327722.jpg';
 import img3 from '../images/1778054327710.jpg';
@@ -15,6 +15,7 @@ export default function Services() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '-80px' });
   const navigate = useNavigate();
+  const { packages, loading } = usePackages();
 
   return (
     <section id="services" className="py-20 sm:py-28 bg-stone-50 relative overflow-hidden" ref={ref}>
@@ -74,69 +75,75 @@ export default function Services() {
         </motion.div>
 
         {/* Image Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
-          {packages.map((pkg, i) => (
-            <motion.div
-              key={pkg.id}
-              initial={{ opacity: 0, y: 50 }}
-              animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.6, delay: i * 0.12 }}
-              className="relative group"
-            >
-              <div className={`relative rounded-2xl overflow-hidden shadow-xl transition-all duration-500 ${
-                pkg.popular ? 'lg:-translate-y-3 shadow-2xl' : 'hover:-translate-y-2 hover:shadow-2xl'
-              }`}>
-                {/* Image */}
-                <div className="relative h-[420px] sm:h-[480px] overflow-hidden">
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <Loader2 className="w-12 h-12 text-gold-500 animate-spin" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+            {packages.map((pkg, i) => (
+              <motion.div
+                key={pkg.id}
+                initial={{ opacity: 0, y: 50 }}
+                animate={inView ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.6, delay: i * 0.12 }}
+                className="relative group"
+              >
+                <div className={`relative rounded-2xl overflow-hidden shadow-xl transition-all duration-500 ${
+                  pkg.popular ? 'lg:-translate-y-3 shadow-2xl' : 'hover:-translate-y-2 hover:shadow-2xl'
+                }`}>
+                  {/* Image */}
+                <div className="relative h-[420px] sm:h-[380px] overflow-hidden">
                   <img
-                    src={packageImages[i]}
+                    src={pkg.coverImage || packageImages[i] || packageImages[0]}
                     alt={`${pkg.name} Package`}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110"
                   />
 
-                  {/* Gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
-                  {/* Popular badge */}
-                  {pkg.popular && (
-                    <div className="absolute top-4 left-4 bg-gold-500 text-white px-4 py-1.5 rounded-full text-xs font-sans font-semibold tracking-widest uppercase shadow-lg z-10">
-                      Most Popular
-                    </div>
-                  )}
-
-                  {/* Content overlay - name + price only */}
-                  <div className="absolute inset-0 flex flex-col justify-end p-6 sm:p-8">
-                    <div>
-                      <h3 className="font-serif text-3xl sm:text-4xl font-light text-white mb-2">
-                        {pkg.name}
-                      </h3>
-                      <div className="flex items-baseline gap-1">
-                        <span className="font-serif text-3xl sm:text-4xl font-light text-gold-300">
-                          {pkg.price}
-                        </span>
-                        <span className="font-sans text-white/50 text-xs">{pkg.priceNote}</span>
+                    {/* Popular badge */}
+                    {pkg.popular && (
+                      <div className="absolute top-4 left-4 bg-gold-500 text-white px-4 py-1.5 rounded-full text-xs font-sans font-semibold tracking-widest uppercase shadow-lg z-10">
+                        Most Popular
                       </div>
-                    </div>
+                    )}
 
-                    {/* View Button */}
-                    <button
-                      onClick={() => navigate(`/package/${pkg.id}`)}
-                      className={`mt-5 inline-flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-sans text-sm font-semibold tracking-wider uppercase transition-all duration-300 cursor-pointer ${
-                        pkg.popular
-                          ? 'bg-gold-500 text-white hover:bg-gold-400 shadow-lg shadow-gold-500/25'
-                          : 'bg-white/10 text-white backdrop-blur-sm border border-white/20 hover:bg-white hover:text-stone-900'
-                      }`}
-                    >
-                      <Eye size={14} />
-                      View Details
-                      <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                    </button>
+                    {/* Content overlay - name + price only */}
+                    <div className="absolute inset-0 flex flex-col justify-end p-6 sm:p-8">
+                      <div>
+                        <h3 className="font-serif text-3xl sm:text-4xl font-light text-white mb-2">
+                          {pkg.name}
+                        </h3>
+                        <div className="flex items-baseline gap-1">
+                          <span className="font-serif text-3xl sm:text-4xl font-light text-gold-300">
+                            {pkg.price}
+                          </span>
+                          <span className="font-sans text-white/50 text-xs">{pkg.priceNote}</span>
+                        </div>
+                      </div>
+
+                      {/* View Button */}
+                      <button
+                        onClick={() => navigate(`/package/${pkg.id}`)}
+                        className={`mt-5 inline-flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-sans text-sm font-semibold tracking-wider uppercase transition-all duration-300 cursor-pointer ${
+                          pkg.popular
+                            ? 'bg-gold-500 text-white hover:bg-gold-400 shadow-lg shadow-gold-500/25'
+                            : 'bg-white/10 text-white backdrop-blur-sm border border-white/20 hover:bg-white hover:text-stone-900'
+                        }`}
+                      >
+                        <Eye size={14} />
+                        View Details
+                        <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
 
         {/* Note */}
         <motion.p

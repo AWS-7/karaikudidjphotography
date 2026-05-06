@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Camera, Instagram, Mail, Phone, MapPin, Heart } from 'lucide-react';
+import { Instagram, Mail, Phone, MapPin, Heart } from 'lucide-react';
+import logo from '../images/1778058672282-removebg-preview.png';
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -11,16 +12,10 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 py-16 border-b border-stone-700">
           {/* Brand */}
           <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-gold-500 to-gold-700 rounded-full flex items-center justify-center">
-                <Camera size={20} className="text-white" />
-              </div>
-              <div>
-                <p className="font-script text-gold-400 text-xl">DJ Photography</p>
-                <p className="font-sans text-xs tracking-widest text-stone-400 uppercase">Karaikudi</p>
-              </div>
+            <div className="flex items-center">
+              <img src={logo} alt="DJ Photography" className="h-16 w-auto object-contain brightness-0 invert" />
             </div>
-            <p className="font-serif text-stone-400 text-sm leading-relaxed italic">
+            <p className="font-serif text-stone-400 text-sm leading-relaxed italic pt-2">
               "Capturing Love, Light & Emotion — one frame at a time."
             </p>
             <div className="flex gap-4">

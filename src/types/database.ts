@@ -72,6 +72,7 @@ export interface Database {
           popular: boolean;
           accent_color: string;
           features: PackageFeature[];
+          cover_image: string | null;
           created_at: string;
         };
         Insert: {
@@ -83,6 +84,7 @@ export interface Database {
           popular?: boolean;
           accent_color: string;
           features: PackageFeature[];
+          cover_image?: string | null;
           created_at?: string;
         };
         Update: {
@@ -94,6 +96,65 @@ export interface Database {
           popular?: boolean;
           accent_color?: string;
           features?: PackageFeature[];
+          cover_image?: string | null;
+          created_at?: string;
+        };
+      };
+      enquiries: {
+        Row: {
+          id: string;
+          name: string;
+          phone: string;
+          email: string;
+          event_date: string;
+          event_type: string;
+          message: string | null;
+          status: 'new' | 'read' | 'contacted' | 'booked';
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          phone: string;
+          email: string;
+          event_date: string;
+          event_type: string;
+          message?: string | null;
+          status?: 'new' | 'read' | 'contacted' | 'booked';
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          phone?: string;
+          email?: string;
+          event_date?: string;
+          event_type?: string;
+          message?: string | null;
+          status?: 'new' | 'read' | 'contacted' | 'booked';
+          created_at?: string;
+        };
+      };
+      availability: {
+        Row: {
+          id: string;
+          date: string;
+          status: 'available' | 'busy' | 'tentative';
+          note: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          date: string;
+          status: 'available' | 'busy' | 'tentative';
+          note?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          date?: string;
+          status?: 'available' | 'busy' | 'tentative';
+          note?: string | null;
           created_at?: string;
         };
       };
@@ -119,6 +180,7 @@ export interface PackageFeature {
 export interface GalleryImage {
   id: string;
   src: string;
+  storagePath?: string;
   alt: string;
   width: number;
   height: number;
@@ -129,8 +191,8 @@ export interface Event {
   slug: string;
   name: string;
   category: string;
-  date: string;
-  location: string;
+  date?: string;
+  location?: string;
   coverImage: string;
   images: GalleryImage[];
 }
@@ -143,8 +205,28 @@ export interface PhotographyPackage {
   badge?: string;
   popular?: boolean;
   accentColor: string;
+  coverImage?: string;
   features: {
     text: string;
     included: boolean;
   }[];
+}
+
+export interface Enquiry {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  eventDate: string;
+  eventType: string;
+  message?: string;
+  status: 'new' | 'read' | 'contacted' | 'booked';
+  createdAt: string;
+}
+
+export interface Availability {
+  id: string;
+  date: string;
+  status: 'available' | 'busy' | 'tentative';
+  note?: string;
 }

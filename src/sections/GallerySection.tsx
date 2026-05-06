@@ -138,9 +138,6 @@ export default function GallerySection() {
                     <h3 className="font-serif text-white text-2xl font-light leading-tight mb-1">
                       {event.name}
                     </h3>
-                    <p className="font-sans text-cream-200/70 text-sm">
-                      {event.date} · {event.location}
-                    </p>
                     <div className="flex items-center gap-1.5 text-gold-300 text-sm font-sans mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <span>View Album</span>
                       <ArrowRight size={14} />

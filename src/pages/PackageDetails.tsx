@@ -1,28 +1,32 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Check, X, ArrowLeft, MessageCircle, Clock, Camera, Users, Film } from 'lucide-react';
+import { Check, X, ArrowLeft, MessageCircle, Clock, Camera, Users, Film, Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
-import { packages } from '../data/packages';
+import { usePackages } from '../hooks/usePackages';
 import img1 from '../images/1778054327731.jpg';
 import img2 from '../images/1778054327722.jpg';
 import img3 from '../images/1778054327710.jpg';
 import img4 from '../images/1778054327688.jpg';
 
-const packageImages: Record<string, string> = {
-  silver: img1,
-  gold: img2,
-  diamond: img3,
-  platinum: img4,
-};
+const packageImagesArray = [img1, img2, img3, img4];
 
 export default function PackageDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const pkg = packages.find((p) => p.id === id);
+  const { packages, loading } = usePackages();
+  const pkgIndex = packages.findIndex((p) => p.id === id);
+  const pkg = packages[pkgIndex];
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-stone-50">
+        <Loader2 className="w-12 h-12 text-gold-500 animate-spin" />
+      </div>
+    );
+  }
 
   if (!pkg) {
     return (
@@ -55,9 +59,9 @@ export default function PackageDetails() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
           {/* Left Side: Image & Header */}
           <div className="space-y-8">
-            <div className="relative aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl">
+            <div className="relative aspect-[4/5] sm:aspect-[3/2] lg:aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl">
               <img
-                src={packageImages[pkg.id]}
+                src={pkg.coverImage || packageImagesArray[pkgIndex] || img1}
                 alt={pkg.name}
                 className="w-full h-full object-cover object-center"
               />

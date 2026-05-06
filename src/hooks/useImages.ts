@@ -73,9 +73,18 @@ export async function deleteImage(imageId: string, storagePath: string) {
   if (storageError) throw storageError;
 
   // Delete from database
-  const { error: dbError } = await supabase.from('gallery_images').delete().eq('id', imageId);
+  const { data, error: dbError } = await supabase
+    .from('gallery_images')
+    .delete()
+    .eq('id', imageId)
+    .select();
 
   if (dbError) throw dbError;
+  
+  if (!data || data.length === 0) {
+    throw new Error('No image was deleted from database. This might be due to database permissions (RLS).');
+  }
+
   return true;
 }
 

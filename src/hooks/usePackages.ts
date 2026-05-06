@@ -20,7 +20,7 @@ export function usePackages() {
 
       if (fetchError) throw fetchError;
 
-      const formattedPackages: PhotographyPackage[] = (data || []).map((pkg) => ({
+      const formattedPackages: PhotographyPackage[] = (data || []).map((pkg: any) => ({
         id: pkg.id,
         name: pkg.name,
         price: `₹${pkg.price.toLocaleString('en-IN')}`,
@@ -28,6 +28,7 @@ export function usePackages() {
         badge: pkg.badge || undefined,
         popular: pkg.popular || false,
         accentColor: pkg.accent_color,
+        coverImage: pkg.cover_image || undefined,
         features: pkg.features,
       }));
 
@@ -54,12 +55,23 @@ export async function createPackage(pkgData: {
   badge?: string;
   popular?: boolean;
   accent_color: string;
+  cover_image?: string;
   features: PackageFeature[];
 }) {
-  const { data, error } = await supabase.from('packages').insert(pkgData).select().single();
-
-  if (error) throw error;
-  return data;
+  try {
+    const { data, error } = await supabase.from('packages').insert(pkgData).select().single();
+    if (error) throw error;
+    return data;
+  } catch (err: any) {
+    // Fallback if cover_image column doesn't exist yet
+    if (err.message?.includes("cover_image") || err.details?.includes("cover_image")) {
+      const { cover_image, ...dataWithoutImage } = pkgData;
+      const { data, error } = await supabase.from('packages').insert(dataWithoutImage).select().single();
+      if (error) throw error;
+      return data;
+    }
+    throw err;
+  }
 }
 
 // Update package (admin only)
@@ -72,13 +84,24 @@ export async function updatePackage(
     badge: string;
     popular: boolean;
     accent_color: string;
+    cover_image: string;
     features: PackageFeature[];
   }>
 ) {
-  const { data, error } = await supabase.from('packages').update(pkgData).eq('id', id).select().single();
-
-  if (error) throw error;
-  return data;
+  try {
+    const { data, error } = await supabase.from('packages').update(pkgData).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  } catch (err: any) {
+    // Fallback if cover_image column doesn't exist yet
+    if (err.message?.includes("cover_image") || err.details?.includes("cover_image")) {
+      const { cover_image, ...dataWithoutImage } = pkgData;
+      const { data, error } = await supabase.from('packages').update(dataWithoutImage).eq('id', id).select().single();
+      if (error) throw error;
+      return data;
+    }
+    throw err;
+  }
 }
 
 // Delete package (admin only)

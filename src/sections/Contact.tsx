@@ -1,18 +1,53 @@
 import { useRef, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
-import { Phone, Mail, Instagram, MapPin, Send, MessageCircle } from 'lucide-react';
+import { Phone, Mail, Instagram, MapPin, Send, MessageCircle, Loader2 } from 'lucide-react';
+import { createEnquiry } from '../hooks/useEnquiries';
+import { useToast } from '../contexts/ToastContext';
 
 export default function Contact() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '-80px' });
-  const [formState, setFormState] = useState({ name: '', phone: '', email: '', date: '', message: '' });
+  const { showToast } = useToast();
+  const [formState, setFormState] = useState({ 
+    name: '', 
+    phone: '', 
+    email: '', 
+    date: '', 
+    eventType: 'Wedding',
+    message: '' 
+  });
+  const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 4000);
-    setFormState({ name: '', phone: '', email: '', date: '', message: '' });
+    setLoading(true);
+    try {
+      await createEnquiry({
+        name: formState.name,
+        phone: formState.phone,
+        email: formState.email,
+        eventDate: formState.date,
+        eventType: formState.eventType,
+        message: formState.message,
+      });
+
+      // Automated WhatsApp Notification Logic
+      const adminPhone = '918825605403';
+      const message = `*New Enquiry from Website*%0A%0A*Name:* ${formState.name}%0A*Phone:* ${formState.phone}%0A*Event:* ${formState.eventType}%0A*Date:* ${formState.date}%0A*Message:* ${formState.message}`;
+      
+      // Open WhatsApp in a new tab (simulating automated notification for the admin)
+      window.open(`https://wa.me/${adminPhone}?text=${message}`, '_blank');
+
+      setSubmitted(true);
+      showToast('success', 'Enquiry sent successfully!');
+      setFormState({ name: '', phone: '', email: '', date: '', eventType: 'Wedding', message: '' });
+      setTimeout(() => setSubmitted(false), 5000);
+    } catch (err) {
+      showToast('error', 'Failed to send enquiry. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -200,15 +235,33 @@ export default function Contact() {
                   </div>
                   <div>
                     <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">
-                      Wedding Date
+                      Event Type *
                     </label>
-                    <input
-                      type="date"
-                      value={formState.date}
-                      onChange={(e) => setFormState({ ...formState, date: e.target.value })}
+                    <select
+                      required
+                      value={formState.eventType}
+                      onChange={(e) => setFormState({ ...formState, eventType: e.target.value })}
                       className="w-full border border-cream-300 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors bg-cream-50"
-                    />
+                    >
+                      <option value="Wedding">Wedding</option>
+                      <option value="Engagement">Engagement</option>
+                      <option value="Pre-Wedding">Pre-Wedding</option>
+                      <option value="Reception">Reception</option>
+                      <option value="Other">Other Event</option>
+                    </select>
                   </div>
+                </div>
+
+                <div>
+                  <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">
+                    Event Date
+                  </label>
+                  <input
+                    type="date"
+                    value={formState.date}
+                    onChange={(e) => setFormState({ ...formState, date: e.target.value })}
+                    className="w-full border border-cream-300 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors bg-cream-50"
+                  />
                 </div>
 
                 <div>
@@ -226,9 +279,10 @@ export default function Contact() {
 
                 <button
                   type="submit"
-                  className="w-full btn-gold justify-center py-4 rounded-lg text-sm"
+                  disabled={loading}
+                  className="w-full btn-gold justify-center py-4 rounded-lg text-sm disabled:opacity-50"
                 >
-                  <Send size={16} />
+                  {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                   Send Enquiry
                 </button>
               </form>

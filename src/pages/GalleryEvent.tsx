@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, MapPin, Calendar, Images, ZoomIn, Loader2 } from 'lucide-react';
+import { ArrowLeft, Images, ZoomIn, Loader2 } from 'lucide-react';
 import { useEvent } from '../hooks/useEvents';
 import Lightbox from '../components/Lightbox';
 
@@ -86,14 +86,6 @@ export default function GalleryEvent() {
               {event.name}
             </h1>
             <div className="flex flex-wrap gap-4 text-white/60 font-sans text-sm">
-              <span className="flex items-center gap-1.5">
-                <Calendar size={14} />
-                {event.date}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <MapPin size={14} />
-                {event.location}
-              </span>
               <span className="flex items-center gap-1.5">
                 <Images size={14} />
                 {event.images.length} Photos

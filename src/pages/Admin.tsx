@@ -5,66 +5,59 @@ import {
   Images,
   PlusCircle,
   Upload,
-  Package,
   Settings,
-  Camera,
-  Bell,
-  Search,
-  MoreHorizontal,
-  Pencil,
+  LogOut,
   Trash2,
+  Check,
+  X,
+  ChevronRight,
+  Camera,
+  Star,
+  Package,
   Eye,
   TrendingUp,
-  Star,
-  ChevronRight,
-  X,
-  Check,
-  LogOut,
   Loader2,
-  ImageIcon,
-  Home,
   MessageSquare,
+  Bell,
+  Home,
   XCircle,
-  MessageCircle,
-  ArrowRight,
+  ImageIcon,
+  Search,
+  Pencil,
+  Phone,
+  Mail,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { useEvents, createEvent, deleteEvent } from '../hooks/useEvents';
-import { usePackages, updatePackage } from '../hooks/usePackages';
+import { usePackages, updatePackage, createPackage, deletePackage } from '../hooks/usePackages';
+import { useEnquiries, updateEnquiryStatus, deleteEnquiry } from '../hooks/useEnquiries';
+import { useAvailability, updateAvailability, deleteAvailability } from '../hooks/useAvailability';
 import { useImageUpload, deleteImage } from '../hooks/useImages';
 import { useToast } from '../contexts/ToastContext';
-import type { Event } from '../types/database';
-import { testimonials as testimonialsData, saveTestimonials, loadTestimonials } from '../data/testimonials';
+import type { Event, Enquiry, Availability } from '../types/database';
+import { saveTestimonials, loadTestimonials, type Testimonial } from '../data/testimonials';
 import img1 from '../images/1778054327731.jpg';
 import img2 from '../images/1778054327722.jpg';
 import img3 from '../images/1778054327710.jpg';
 import img4 from '../images/1778054327688.jpg';
+import logo from '../images/1778058672282-removebg-preview.png';
 
 const packageImages = [img1, img2, img3, img4];
 
-// Testimonial type for reviews management
-interface Testimonial {
-  id: string;
-  name: string;
-  role: string;
-  location: string;
-  avatar: string;
-  review: string;
-  rating: number;
-  event: string;
-}
-
-type Tab = 'dashboard' | 'gallery' | 'add-event' | 'upload' | 'packages' | 'hero' | 'reviews' | 'settings';
+type Tab = 'dashboard' | 'gallery' | 'add-event' | 'upload' | 'packages' | 'hero' | 'about' | 'reviews' | 'enquiries' | 'calendar' | 'settings';
 
 const navItems: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'enquiries', label: 'New Enquiries', icon: MessageSquare },
+  { id: 'calendar', label: 'Availability', icon: Bell },
   { id: 'gallery', label: 'Manage Gallery', icon: Images },
   { id: 'add-event', label: 'Add Event', icon: PlusCircle },
   { id: 'upload', label: 'Upload Images', icon: Upload },
   { id: 'packages', label: 'Packages', icon: Package },
   { id: 'hero', label: 'Hero Section', icon: Home },
-  { id: 'reviews', label: 'Reviews', icon: MessageSquare },
+  { id: 'about', label: 'About Me', icon: Camera },
+  { id: 'reviews', label: 'Reviews', icon: Bell },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
@@ -190,14 +183,8 @@ export default function Admin() {
           >
             {/* Logo */}
             <div className="px-6 py-7 border-b border-stone-700">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-gradient-to-br from-gold-500 to-gold-700 rounded-full flex items-center justify-center">
-                  <Camera size={18} className="text-white" />
-                </div>
-                <div>
-                  <p className="font-script text-gold-400 text-lg leading-none">DJ Photography</p>
-                  <p className="font-sans text-xs text-stone-400 tracking-widest uppercase">Admin Panel</p>
-                </div>
+              <div className="flex items-center">
+                <img src={logo} alt="DJ Photography" className="h-12 w-auto object-contain brightness-0 invert" />
               </div>
             </div>
 
@@ -292,6 +279,9 @@ export default function Admin() {
               {activeTab === 'upload' && <UploadTab dragOver={dragOver} setDragOver={setDragOver} />}
               {activeTab === 'packages' && <PackagesTab />}
               {activeTab === 'hero' && <HeroTab />}
+              {activeTab === 'about' && <AboutTab />}
+              {activeTab === 'enquiries' && <EnquiriesTab />}
+              {activeTab === 'calendar' && <CalendarTab />}
               {activeTab === 'reviews' && <ReviewsTab />}
               {activeTab === 'settings' && <SettingsTab />}
             </motion.div>
@@ -304,19 +294,21 @@ export default function Admin() {
 
 /* ─────────────── Dashboard Tab ─────────────── */
 function DashboardTab() {
-  const { events, loading } = useEvents();
+  const { events, loading: eventsLoading } = useEvents();
   const { packages } = usePackages();
+  const { enquiries, loading: enquiriesLoading } = useEnquiries();
   
   const totalPhotos = events.reduce((acc, e) => acc + e.images.length, 0);
+  const newEnquiriesCount = enquiries.filter(e => e.status === 'new').length;
 
   const stats = [
+    { label: 'New Enquiries', value: newEnquiriesCount.toString(), change: 'Requires attention', icon: MessageSquare, color: 'text-gold-600 bg-gold-50' },
     { label: 'Total Events', value: events.length.toString(), change: '+3 this month', icon: Images, color: 'text-blue-500 bg-blue-50' },
-    { label: 'Total Photos', value: totalPhotos.toLocaleString(), change: '+240 this month', icon: Camera, color: 'text-gold-600 bg-gold-50' },
+    { label: 'Total Photos', value: totalPhotos.toLocaleString(), change: '+240 this month', icon: Camera, color: 'text-stone-600 bg-stone-50' },
     { label: 'Packages', value: packages.length.toString(), change: 'All active', icon: Package, color: 'text-green-600 bg-green-50' },
-    { label: 'Storage', value: '85%', change: '12GB used', icon: Star, color: 'text-maroon-600 bg-maroon-50' },
   ];
 
-  if (loading) {
+  if (eventsLoading || enquiriesLoading) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 size={40} className="text-gold-500 animate-spin" />
@@ -364,7 +356,7 @@ function DashboardTab() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-sans text-sm font-medium text-stone-700 truncate">{event.name}</p>
-                <p className="font-sans text-xs text-stone-400">{event.date} · {event.location}</p>
+                <p className="font-sans text-xs text-stone-400">{event.category}</p>
               </div>
               <span className="font-sans text-xs bg-cream-100 text-stone-600 px-2.5 py-1 rounded-full">{event.images.length} photos</span>
               <span className="font-sans text-xs bg-gold-50 text-gold-700 px-2.5 py-1 rounded-full">{event.category}</span>
@@ -392,26 +384,23 @@ function GalleryTab() {
     try {
       await deleteEvent(event.id);
       showToast('success', 'Event deleted successfully');
-      refetch();
+      // Force refresh data
+      await refetch();
     } catch (err) {
-      showToast('error', 'Failed to delete event');
+      console.error('Delete event error:', err);
+      showToast('error', `Failed to delete event: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setDeleteLoading(null);
     }
   };
 
-  const handleDeleteImage = async (imageId: string, src: string) => {
+  const handleDeleteImage = async (imageId: string, storagePath?: string) => {
     if (!confirm('Delete this image?')) return;
     
-    // Extract storage path from URL if possible, or use a heuristic
-    // Our storage path is usually 'event-slug/filename'
-    // The URL is like '.../gallery/event-slug/filename'
-    const urlParts = src.split('/gallery/');
-    if (urlParts.length < 2) {
+    if (!storagePath) {
       showToast('error', 'Could not determine storage path');
       return;
     }
-    const storagePath = urlParts[1];
 
     try {
       await deleteImage(imageId, storagePath);
@@ -423,9 +412,10 @@ function GalleryTab() {
           images: selectedEventImages.images.filter(img => img.id !== imageId)
         });
       }
-      refetch();
+      await refetch();
     } catch (err) {
-      showToast('error', 'Failed to delete image');
+      console.error('Delete image error:', err);
+      showToast('error', `Failed to delete image: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 
@@ -468,7 +458,6 @@ function GalleryTab() {
               </div>
               <div className="p-4">
                 <h3 className="font-sans font-medium text-stone-800 text-sm">{event.name}</h3>
-                <p className="font-sans text-xs text-stone-400 mt-0.5">{event.date} · {event.location}</p>
                 <p className="font-sans text-xs text-stone-500 mt-1">{event.images.length} photos</p>
                 <div className="flex gap-2 mt-3">
                   <button
@@ -532,7 +521,7 @@ function GalleryTab() {
                       <img src={img.src} alt="" className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <button
-                          onClick={() => handleDeleteImage(img.id, img.src)}
+                          onClick={() => handleDeleteImage(img.id, img.storagePath)}
                           className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors transform scale-90 group-hover:scale-100 duration-200"
                         >
                           <Trash2 size={18} />
@@ -566,8 +555,6 @@ function AddEventTab() {
   const [formData, setFormData] = useState({
     event_name: '',
     category: 'Wedding',
-    event_date: '',
-    location: '',
     description: '',
     cover_image: '',
   });
@@ -581,8 +568,8 @@ function AddEventTab() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.event_name || !formData.event_date || !formData.location) {
-      showToast('error', 'Please fill in all required fields');
+    if (!formData.event_name) {
+      showToast('error', 'Please fill in the event name');
       return;
     }
 
@@ -596,8 +583,6 @@ function AddEventTab() {
       setFormData({
         event_name: '',
         category: 'Wedding',
-        event_date: '',
-        location: '',
         description: '',
         cover_image: '',
       });
@@ -642,31 +627,6 @@ function AddEventTab() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <div>
-            <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Event Date *</label>
-            <input
-              type="text"
-              value={formData.event_date}
-              onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
-              placeholder="e.g. January 2024"
-              className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors"
-              required
-            />
-          </div>
-          <div>
-            <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Location *</label>
-            <input
-              type="text"
-              value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              placeholder="e.g. Karaikudi"
-              className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 placeholder-stone-300 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors"
-              required
-            />
-          </div>
-        </div>
-
         <div>
           <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Event Description</label>
           <textarea
@@ -704,8 +664,6 @@ function AddEventTab() {
             onClick={() => setFormData({
               event_name: '',
               category: 'Wedding',
-              event_date: '',
-              location: '',
               description: '',
               cover_image: '',
             })}
@@ -895,36 +853,134 @@ function PackagesTab() {
   const { showToast } = useToast();
   const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
   const [editingPackage, setEditingPackage] = useState<any | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
+  const [newFeatureText, setNewFeatureText] = useState('');
+  const [uploadingPkgImage, setUploadingPkgImage] = useState(false);
+  const pkgFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleEditClick = (pkg: any) => {
+    setIsCreating(false);
     // Extract numeric price from formatted string (e.g., "₹95,000" -> 95000)
-    const numericPrice = parseInt(pkg.price.replace(/[^0-9]/g, ''));
+    let numericPrice = 0;
+    if (typeof pkg.price === 'string') {
+      const cleaned = pkg.price.replace(/[^0-9]/g, '');
+      numericPrice = cleaned ? parseInt(cleaned) : 0;
+    } else {
+      numericPrice = pkg.price || 0;
+    }
+
     setEditingPackage({
       ...pkg,
       price: numericPrice,
+      cover_image: pkg.coverImage || '',
+      // Ensure features is a fresh copy
+      features: pkg.features ? JSON.parse(JSON.stringify(pkg.features)) : []
     });
+  };
+
+  const handleAddNewClick = () => {
+    setIsCreating(true);
+    setEditingPackage({
+      name: '',
+      price: 0,
+      priceNote: 'Starting price',
+      badge: '',
+      popular: false,
+      accent_color: 'from-gold-500 to-gold-400',
+      cover_image: '',
+      features: [
+        { text: 'Professional Photography', included: true },
+        { text: 'Edited Photos', included: true },
+        { text: 'Online Gallery', included: true },
+      ]
+    });
+  };
+
+  const handlePackageImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editingPackage) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast('error', 'Please select an image file');
+      return;
+    }
+
+    setUploadingPkgImage(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `package_${Date.now()}.${fileExt}`;
+      const storagePath = `packages/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('gallery')
+        .upload(storagePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from('gallery').getPublicUrl(storagePath);
+      setEditingPackage({ ...editingPackage, cover_image: urlData.publicUrl });
+      showToast('success', 'Image uploaded successfully!');
+    } catch (err) {
+      console.error('Package image upload error:', err);
+      showToast('error', 'Failed to upload image');
+    } finally {
+      setUploadingPkgImage(false);
+    }
   };
 
   const handleUpdatePackage = async () => {
     if (!editingPackage) return;
     setUpdateLoading(true);
     try {
-      await updatePackage(editingPackage.id, {
-        name: editingPackage.name,
-        price: editingPackage.price,
-        price_note: editingPackage.priceNote,
-        badge: editingPackage.badge,
-        popular: editingPackage.popular,
-        features: editingPackage.features,
-      });
-      showToast('success', 'Package updated successfully!');
+      if (isCreating) {
+        await createPackage({
+          name: editingPackage.name,
+          price: editingPackage.price,
+          price_note: editingPackage.priceNote,
+          badge: editingPackage.badge,
+          popular: editingPackage.popular,
+          accent_color: editingPackage.accent_color,
+          cover_image: editingPackage.cover_image,
+          features: editingPackage.features,
+        });
+        showToast('success', 'Package created successfully!');
+      } else {
+        await updatePackage(editingPackage.id, {
+          name: editingPackage.name,
+          price: editingPackage.price,
+          price_note: editingPackage.priceNote,
+          badge: editingPackage.badge,
+          popular: editingPackage.popular,
+          cover_image: editingPackage.cover_image,
+          features: editingPackage.features,
+        });
+        showToast('success', 'Package updated successfully!');
+      }
       setEditingPackage(null);
-      refetch();
-    } catch (err) {
-      showToast('error', 'Failed to update package');
+      // Wait a bit before refetching to ensure DB consistency
+      setTimeout(() => refetch(), 500);
+    } catch (err: any) {
+      console.error('Save package error:', err);
+      if (err.message?.includes("cover_image") || err.details?.includes("cover_image")) {
+        showToast('error', 'Database needs update: Please add "cover_image" column to packages table in Supabase.');
+      } else {
+        showToast('error', `Failed to ${isCreating ? 'create' : 'update'} package`);
+      }
     } finally {
       setUpdateLoading(false);
+    }
+  };
+
+  const handleDeletePackage = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this package?')) return;
+    
+    try {
+      await deletePackage(id);
+      showToast('success', 'Package deleted successfully');
+      refetch();
+    } catch (err) {
+      showToast('error', 'Failed to delete package');
     }
   };
 
@@ -932,6 +988,22 @@ function PackagesTab() {
     if (!editingPackage) return;
     const newFeatures = [...editingPackage.features];
     newFeatures[index].included = !newFeatures[index].included;
+    setEditingPackage({ ...editingPackage, features: newFeatures });
+  };
+
+  const addFeature = () => {
+    if (!editingPackage || !newFeatureText.trim()) return;
+    const newFeatures = [
+      ...editingPackage.features,
+      { text: newFeatureText.trim(), included: true }
+    ];
+    setEditingPackage({ ...editingPackage, features: newFeatures });
+    setNewFeatureText('');
+  };
+
+  const removeFeature = (index: number) => {
+    if (!editingPackage) return;
+    const newFeatures = editingPackage.features.filter((_: any, i: number) => i !== index);
     setEditingPackage({ ...editingPackage, features: newFeatures });
   };
 
@@ -950,13 +1022,20 @@ function PackagesTab() {
           <h1 className="font-serif text-3xl text-stone-800">Packages</h1>
           <p className="font-sans text-stone-400 text-sm mt-1">Manage your photography packages and pricing</p>
         </div>
+        <button
+          onClick={handleAddNewClick}
+          className="btn-gold flex items-center gap-2 text-sm"
+        >
+          <PlusCircle size={18} />
+          Add New Package
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {packages.map((pkg, i) => (
           <div key={pkg.id} className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
             <div className="relative h-32 overflow-hidden">
-              <img src={packageImages[i]} alt={pkg.name} className="w-full h-full object-cover object-center" />
+              <img src={pkg.coverImage || packageImages[i] || packageImages[0]} alt={pkg.name} className="w-full h-full object-cover object-center" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
               <div className="absolute bottom-3 left-4">
                 <h3 className="font-serif text-xl text-white">{pkg.name}</h3>
@@ -996,8 +1075,12 @@ function PackagesTab() {
                 >
                   <Pencil size={13} /> Edit
                 </button>
-                <button className="p-2 rounded-lg bg-stone-50 hover:bg-stone-100 text-stone-500 transition-colors">
-                  <MoreHorizontal size={15} />
+                <button 
+                  onClick={() => handleDeletePackage(pkg.id)}
+                  className="p-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 transition-colors"
+                  title="Delete Package"
+                >
+                  <Trash2 size={15} />
                 </button>
               </div>
             </div>
@@ -1005,7 +1088,7 @@ function PackagesTab() {
         ))}
       </div>
 
-      {/* Edit Package Modal */}
+      {/* Edit/Create Package Modal */}
       <AnimatePresence>
         {editingPackage && (
           <motion.div
@@ -1021,13 +1104,55 @@ function PackagesTab() {
               className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
             >
               <div className="p-6 border-b border-stone-100 flex items-center justify-between">
-                <h2 className="font-serif text-2xl text-stone-800">Edit {editingPackage.name} Package</h2>
+                <h2 className="font-serif text-2xl text-stone-800">{isCreating ? 'Add New' : 'Edit ' + editingPackage.name} Package</h2>
                 <button onClick={() => setEditingPackage(null)} className="p-2 hover:bg-stone-100 rounded-full transition-colors">
                   <X size={20} className="text-stone-400" />
                 </button>
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                {/* Package Image */}
+                <div>
+                  <label className="font-sans text-xs text-stone-400 uppercase tracking-widest mb-1.5 block">Package Image</label>
+                  <div className="flex gap-4 items-center">
+                    <div className="w-24 h-16 rounded-lg overflow-hidden border border-stone-100 shadow-sm bg-stone-50">
+                      {editingPackage.cover_image ? (
+                        <img src={editingPackage.cover_image} alt="Package" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-stone-300">
+                          <ImageIcon size={20} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        ref={pkgFileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePackageImageUpload}
+                        className="hidden"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => pkgFileInputRef.current?.click()}
+                          disabled={uploadingPkgImage}
+                          className="px-4 py-2 bg-stone-100 hover:bg-stone-200 rounded-lg text-stone-600 text-xs font-sans transition-colors flex items-center gap-2"
+                        >
+                          {uploadingPkgImage ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                          Upload Photo
+                        </button>
+                        <input
+                          type="url"
+                          value={editingPackage.cover_image}
+                          onChange={(e) => setEditingPackage({ ...editingPackage, cover_image: e.target.value })}
+                          placeholder="Or paste image URL"
+                          className="flex-1 border border-stone-200 rounded-lg px-3 py-2 font-sans text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="font-sans text-xs text-stone-400 uppercase tracking-widest mb-1.5 block">Package Name</label>
@@ -1042,8 +1167,8 @@ function PackagesTab() {
                     <label className="font-sans text-xs text-stone-400 uppercase tracking-widest mb-1.5 block">Price (₹)</label>
                     <input
                       type="number"
-                      value={editingPackage.price}
-                      onChange={(e) => setEditingPackage({ ...editingPackage, price: parseInt(e.target.value) })}
+                      value={editingPackage.price || ''}
+                      onChange={(e) => setEditingPackage({ ...editingPackage, price: e.target.value === '' ? 0 : parseInt(e.target.value) })}
                       className="w-full border border-stone-200 rounded-lg px-4 py-2.5 font-sans text-sm"
                     />
                   </div>
@@ -1060,25 +1185,54 @@ function PackagesTab() {
                 </div>
 
                 <div>
-                  <label className="font-sans text-xs text-stone-400 uppercase tracking-widest mb-3 block">Included Features</label>
+                  <label className="font-sans text-xs text-stone-400 uppercase tracking-widest mb-3 block">Manage Features</label>
+                  
+                  {/* Add New Feature */}
+                  <div className="flex gap-2 mb-4">
+                    <input
+                      type="text"
+                      value={newFeatureText}
+                      onChange={(e) => setNewFeatureText(e.target.value)}
+                      placeholder="Type a new service/feature..."
+                      className="flex-1 border border-stone-200 rounded-lg px-4 py-2 font-sans text-sm focus:border-gold-400 outline-none"
+                      onKeyDown={(e) => e.key === 'Enter' && addFeature()}
+                    />
+                    <button
+                      onClick={addFeature}
+                      className="bg-stone-800 text-white px-4 py-2 rounded-lg font-sans text-xs hover:bg-stone-700 transition-colors flex items-center gap-2"
+                    >
+                      <PlusCircle size={14} /> Add
+                    </button>
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {editingPackage.features.map((feature: any, idx: number) => (
-                      <button
-                        key={idx}
-                        onClick={() => toggleFeature(idx)}
-                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
-                          feature.included 
-                            ? 'border-gold-200 bg-gold-50 text-gold-700' 
-                            : 'border-stone-100 bg-stone-50 text-stone-400'
-                        }`}
-                      >
-                        <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          feature.included ? 'bg-gold-500 text-white' : 'bg-stone-200 text-stone-400'
-                        }`}>
-                          {feature.included ? <Check size={12} strokeWidth={3} /> : <X size={12} strokeWidth={3} />}
-                        </div>
-                        <span className="font-sans text-xs font-medium">{feature.text}</span>
-                      </button>
+                      <div key={idx} className="relative group/feat">
+                        <button
+                          onClick={() => toggleFeature(idx)}
+                          className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left pr-10 ${
+                            feature.included 
+                              ? 'border-gold-200 bg-gold-50 text-gold-700' 
+                              : 'border-stone-100 bg-stone-50 text-stone-400'
+                          }`}
+                        >
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            feature.included ? 'bg-gold-500 text-white' : 'bg-stone-200 text-stone-400'
+                          }`}>
+                            {feature.included ? <Check size={12} strokeWidth={3} /> : <X size={12} strokeWidth={3} />}
+                          </div>
+                          <span className="font-sans text-xs font-medium truncate">{feature.text}</span>
+                        </button>
+                        
+                        {/* Remove button */}
+                        <button
+                          onClick={() => removeFeature(idx)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-stone-300 hover:text-red-500 opacity-0 group-hover/feat:opacity-100 transition-all"
+                          title="Remove feature"
+                        >
+                          <XCircle size={14} />
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -1196,12 +1350,22 @@ function PackagesTab() {
 /* ─────────────── Hero Tab ─────────────── */
 const HERO_STORAGE_KEY = 'dj_hero_data';
 
-function loadHeroData() {
-  try {
-    const stored = localStorage.getItem(HERO_STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
-  } catch { /* ignore */ }
-  return {
+interface HeroData {
+  subtitle: string;
+  title: string;
+  tagline: string;
+  stat1Value: string;
+  stat1Label: string;
+  stat2Value: string;
+  stat2Label: string;
+  stat3Value: string;
+  stat3Label: string;
+  bgImage: string;
+  bgImages?: string[];
+}
+
+function loadHeroData(): HeroData {
+  const defaultData: HeroData = {
     subtitle: 'DJ Photography',
     title: 'Capturing Love, Light & Emotion',
     tagline: 'Professional Wedding Photographer & Cinematographer',
@@ -1212,71 +1376,168 @@ function loadHeroData() {
     stat3Value: '100%',
     stat3Label: 'Happy Clients',
     bgImage: 'https://images.pexels.com/photos/1456613/pexels-photo-1456613.jpeg?auto=compress&cs=tinysrgb&w=1920',
+    bgImages: ['https://images.pexels.com/photos/1456613/pexels-photo-1456613.jpeg?auto=compress&cs=tinysrgb&w=1920'],
   };
+
+  try {
+    const stored = localStorage.getItem(HERO_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return { 
+        ...defaultData, 
+        ...parsed,
+        bgImages: parsed.bgImages || [parsed.bgImage || defaultData.bgImage]
+      };
+    }
+  } catch { /* ignore */ }
+  return defaultData;
 }
 
 function HeroTab() {
   const { showToast } = useToast();
-  const [heroData, setHeroData] = useState(loadHeroData);
+  const [heroData, setHeroData] = useState<HeroData>(loadHeroData);
   const [uploadingHero, setUploadingHero] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const handleUrlChange = (url: string) => {
+    let normalizedUrl = url;
+    
+    // Handle Google Drive share links
+    if (url.includes('drive.google.com')) {
+      const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if (match && match[1]) {
+        normalizedUrl = `https://drive.google.com/uc?export=view&id=${match[1]}`;
+      }
+    }
+    
+    // Warn about Google Photos (they don't allow direct linking easily)
+    if (url.includes('photos.app.goo.gl') || url.includes('photos.google.com')) {
+      showToast('error', 'Google Photos links are not direct images. Please use the Upload button instead.');
+    }
+
+    setHeroData({ 
+      ...heroData, 
+      bgImage: normalizedUrl,
+      bgImages: [...(heroData.bgImages || []), normalizedUrl]
+    });
+  };
+
+  const handleRemoveImage = (index: number) => {
+    const currentImages = heroData.bgImages || [];
+    const newImages = currentImages.filter((_, i) => i !== index);
+    setHeroData({
+      ...heroData,
+      bgImages: newImages,
+      bgImage: newImages[0] || ''
+    });
+  };
+
   const handleSave = () => {
-    localStorage.setItem(HERO_STORAGE_KEY, JSON.stringify(heroData));
-    showToast('success', 'Hero section updated successfully!');
+    try {
+      // Don't save base64 data to localStorage to avoid QuotaExceededError
+      if (heroData.bgImage.startsWith('data:') || (heroData.bgImages || []).some(img => img.startsWith('data:'))) {
+        showToast('error', 'Please wait for all image uploads to complete before saving');
+        return;
+      }
+      localStorage.setItem(HERO_STORAGE_KEY, JSON.stringify(heroData));
+      showToast('success', 'Hero section updated successfully!');
+    } catch (err) {
+      console.error('Save hero error:', err);
+      if (err instanceof Error && err.name === 'QuotaExceededError') {
+        showToast('error', 'Storage full. Try using smaller images or URLs.');
+      } else {
+        showToast('error', 'Failed to save changes');
+      }
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      showToast('error', 'Please select an image file');
-      return;
-    }
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     setUploadingHero(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `hero_bg_${Date.now()}.${fileExt}`;
-      const storagePath = `hero/${fileName}`;
+      const uploadedUrls: string[] = [];
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (!file.type.startsWith('image/')) continue;
+        if (file.size > 5 * 1024 * 1024) {
+          showToast('error', `File ${file.name} too large (>5MB)`);
+          continue;
+        }
 
-      const { error: uploadError } = await supabase.storage
-        .from('gallery')
-        .upload(storagePath, file, {
-          cacheControl: '3600',
-          upsert: true,
-        });
+        const fileExt = file.name.split('.').pop();
+        const fileName = `hero_bg_${Date.now()}_${i}.${fileExt}`;
+        const storagePath = `hero/${fileName}`;
 
-      if (uploadError) throw uploadError;
+        const { error: uploadError } = await supabase.storage
+          .from('gallery')
+          .upload(storagePath, file, {
+            cacheControl: '3600',
+            upsert: true,
+          });
 
-      const { data: urlData } = supabase.storage.from('gallery').getPublicUrl(storagePath);
-      const imageUrl = urlData.publicUrl;
+        if (uploadError) throw uploadError;
 
-      setHeroData({ ...heroData, bgImage: imageUrl });
-      showToast('success', 'Hero image uploaded to storage!');
+        const { data: urlData } = supabase.storage.from('gallery').getPublicUrl(storagePath);
+        uploadedUrls.push(urlData.publicUrl);
+      }
+
+      const newImages = [...(heroData.bgImages || []), ...uploadedUrls];
+      setHeroData((prev) => ({ 
+        ...prev, 
+        bgImages: newImages,
+        bgImage: newImages[0] || prev.bgImage
+      }));
+      
+      showToast('success', `${uploadedUrls.length} images uploaded successfully!`);
     } catch (err) {
       console.error('Hero upload error:', err);
-      showToast('error', 'Failed to upload image to storage');
+      showToast('error', 'Failed to upload images to storage');
     } finally {
       setUploadingHero(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-4xl">
       <div>
         <h1 className="font-serif text-3xl text-stone-800">Hero Section</h1>
-        <p className="font-sans text-stone-400 text-sm mt-1">Edit your homepage hero banner content</p>
+        <p className="font-sans text-stone-400 text-sm mt-1">Edit your homepage hero slider and content</p>
       </div>
 
-      {/* Preview */}
-      <div className="relative rounded-xl overflow-hidden h-48 sm:h-64">
-        <img src={heroData.bgImage} alt="Hero preview" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-6">
-          <div>
-            <p className="font-script text-gold-300 text-lg">{heroData.subtitle}</p>
-            <h3 className="font-serif text-white text-xl sm:text-2xl">{heroData.title}</h3>
-          </div>
+      {/* Preview Slider */}
+      <div className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden p-6">
+        <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-4 block">Background Slider Preview</label>
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
+          {(heroData.bgImages || []).map((img, idx) => (
+            <div key={idx} className="relative group aspect-[16/10] rounded-lg overflow-hidden border border-stone-100 shadow-sm">
+              <img src={img} alt={`Hero ${idx + 1}`} className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <button
+                  onClick={() => handleRemoveImage(idx)}
+                  className="p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+              {idx === 0 && (
+                <div className="absolute top-1 left-1 bg-gold-500 text-white text-[8px] px-1.5 py-0.5 rounded-full font-sans uppercase tracking-tighter">
+                  Primary
+                </div>
+              )}
+            </div>
+          ))}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingHero}
+            className="aspect-[16/10] rounded-lg border-2 border-dashed border-stone-200 flex flex-col items-center justify-center text-stone-400 hover:border-gold-300 hover:text-gold-500 transition-all group"
+          >
+            {uploadingHero ? <Loader2 size={24} className="animate-spin" /> : <PlusCircle size={24} />}
+            <span className="text-[10px] mt-1 font-sans">Add Image</span>
+          </button>
         </div>
       </div>
 
@@ -1284,38 +1545,39 @@ function HeroTab() {
       <div className="bg-white rounded-xl border border-stone-200 shadow-sm p-8 space-y-5">
         <h3 className="font-serif text-lg text-stone-800 border-b border-stone-100 pb-3">Hero Content</h3>
 
-        {/* Image Upload */}
-        <div>
-          <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Background Image</label>
+        {/* Multiple Upload */}
+        <div className="space-y-3">
+          <label className="font-sans text-xs text-stone-400 tracking-widest uppercase block">Add Background Images</label>
           <div className="flex gap-3">
             <input
               type="url"
-              value={heroData.bgImage.startsWith('data:') ? '' : heroData.bgImage}
-              onChange={(e) => setHeroData({ ...heroData, bgImage: e.target.value })}
-              placeholder="https://... or upload below"
+              placeholder="Paste image URL and press enter"
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleUrlChange((e.target as HTMLInputElement).value);
+                  (e.target as HTMLInputElement).value = '';
+                }
+              }}
               className="flex-1 border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors"
             />
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*"
+              multiple
               onChange={handleFileUpload}
               className="hidden"
             />
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadingHero}
-              className="flex items-center gap-2 px-4 py-3 bg-stone-100 hover:bg-stone-200 rounded-lg text-stone-600 text-sm font-sans transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-3 bg-stone-100 hover:bg-stone-200 rounded-lg text-stone-600 text-sm font-sans transition-colors disabled:opacity-50"
             >
               {uploadingHero ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-              Upload
+              Upload Multiple
             </button>
           </div>
-          {heroData.bgImage.startsWith('data:') && (
-            <p className="font-sans text-xs text-green-600 mt-2 flex items-center gap-1">
-              <Check size={12} /> Image uploaded from device
-            </p>
-          )}
+          <p className="font-sans text-[10px] text-stone-400">Recommended size: 1920x1080px. Images will cycle every 5 seconds.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -1380,6 +1642,301 @@ function HeroTab() {
           <Check size={14} />
           Save Hero Changes
         </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────── About Tab ─────────────── */
+const ABOUT_STORAGE_KEY = 'dj_about_data';
+
+interface AboutData {
+  name: string;
+  subtitle: string;
+  title: string;
+  description1: string;
+  description2: string;
+  since: string;
+  location: string;
+  image: string;
+  specialties: string[];
+  stats: { icon: string; value: string; label: string }[];
+}
+
+function loadAboutData(): AboutData {
+  const defaultData: AboutData = {
+    name: 'Dass',
+    subtitle: 'Get To Know Me',
+    title: 'Your Storyteller Behind the Lens in Karaikudi',
+    description1: "Based in the heart of Karaikudi, I've spent over 8 years perfecting the art of capturing life's most precious moments. Every wedding is a unique story — and I believe in telling it through candid emotions, natural light, and real moments that you'll treasure forever.",
+    description2: "From the nervous excitement of the morning preparations to the joyful tears during the ceremony, I document every layer of your wedding day with a cinematic eye and a respectful presence. My approach is unobtrusive, allowing genuine moments to unfold naturally.",
+    since: '2016',
+    location: 'Karaikudi',
+    image: 'https://images.pexels.com/photos/1456613/pexels-photo-1456613.jpeg?auto=compress&cs=tinysrgb&w=1200',
+    specialties: [
+      'Candid Storytelling',
+      'Emotion-First Approach',
+      'Cinematic Filmmaking',
+      'Pre-Wedding Shoots',
+      'Chettinad Specialist',
+      'Same-Day Edits',
+    ],
+    stats: [
+      { icon: 'Camera', value: '8+', label: 'Years of Experience' },
+      { icon: 'Heart', value: '1500+', label: 'Weddings Captured' },
+      { icon: 'Award', value: '50+', label: 'Awards & Recognition' },
+      { icon: 'Star', value: '100%', label: 'Client Satisfaction' },
+    ],
+  };
+
+  try {
+    const stored = localStorage.getItem(ABOUT_STORAGE_KEY);
+    if (stored) return { ...defaultData, ...JSON.parse(stored) };
+  } catch { /* ignore */ }
+  return defaultData;
+}
+
+function AboutTab() {
+  const { showToast } = useToast();
+  const [aboutData, setAboutData] = useState<AboutData>(loadAboutData);
+  const [uploadingAbout, setUploadingAbout] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [newSpecialty, setNewSpecialty] = useState('');
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast('error', 'Please select an image file');
+      return;
+    }
+
+    setUploadingAbout(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `about_me_${Date.now()}.${fileExt}`;
+      const storagePath = `about/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('gallery')
+        .upload(storagePath, file, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from('gallery').getPublicUrl(storagePath);
+      const imageUrl = urlData.publicUrl;
+
+      setAboutData((prev) => ({ ...prev, image: imageUrl }));
+      showToast('success', 'Profile image uploaded successfully!');
+    } catch (err) {
+      console.error('About upload error:', err);
+      showToast('error', 'Failed to upload image');
+    } finally {
+      setUploadingAbout(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleSave = () => {
+    try {
+      localStorage.setItem(ABOUT_STORAGE_KEY, JSON.stringify(aboutData));
+      showToast('success', 'About section updated successfully!');
+    } catch (err) {
+      showToast('error', 'Failed to save changes');
+    }
+  };
+
+  const addSpecialty = () => {
+    if (!newSpecialty.trim()) return;
+    setAboutData({
+      ...aboutData,
+      specialties: [...aboutData.specialties, newSpecialty.trim()],
+    });
+    setNewSpecialty('');
+  };
+
+  const removeSpecialty = (index: number) => {
+    setAboutData({
+      ...aboutData,
+      specialties: aboutData.specialties.filter((_, i) => i !== index),
+    });
+  };
+
+  return (
+    <div className="space-y-6 max-w-4xl">
+      <div>
+        <h1 className="font-serif text-3xl text-stone-800">About Me</h1>
+        <p className="font-sans text-stone-400 text-sm mt-1">Manage your professional profile and biography</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Image & Quick Info */}
+        <div className="lg:col-span-1 space-y-6">
+          <div className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden p-6">
+            <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-4 block">Profile Image</label>
+            <div className="relative group aspect-[3/4] rounded-lg overflow-hidden mb-4">
+              <img src={aboutData.image} alt="Profile" className="w-full h-full object-cover" />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white gap-2"
+              >
+                {uploadingAbout ? <Loader2 className="animate-spin" /> : <Upload size={20} />}
+                <span className="text-sm font-medium">Change Photo</span>
+              </button>
+            </div>
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+            
+            <div className="space-y-4 pt-2">
+              <div>
+                <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-1.5 block">Photographer Name</label>
+                <input
+                  type="text"
+                  value={aboutData.name}
+                  onChange={(e) => setAboutData({ ...aboutData, name: e.target.value })}
+                  className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm font-sans"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-1.5 block">Since (Year)</label>
+                  <input
+                    type="text"
+                    value={aboutData.since}
+                    onChange={(e) => setAboutData({ ...aboutData, since: e.target.value })}
+                    className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm font-sans"
+                  />
+                </div>
+                <div>
+                  <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-1.5 block">Location</label>
+                  <input
+                    type="text"
+                    value={aboutData.location}
+                    onChange={(e) => setAboutData({ ...aboutData, location: e.target.value })}
+                    className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm font-sans"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-stone-200 shadow-sm p-6">
+            <h3 className="font-serif text-lg text-stone-800 border-b border-stone-100 pb-3 mb-4">Stats</h3>
+            <div className="space-y-4">
+              {aboutData.stats.map((stat, idx) => (
+                <div key={idx} className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    value={stat.value}
+                    onChange={(e) => {
+                      const newStats = [...aboutData.stats];
+                      newStats[idx].value = e.target.value;
+                      setAboutData({ ...aboutData, stats: newStats });
+                    }}
+                    placeholder="Value (e.g. 8+)"
+                    className="border border-stone-200 rounded-lg px-3 py-2 text-sm font-sans"
+                  />
+                  <input
+                    type="text"
+                    value={stat.label}
+                    onChange={(e) => {
+                      const newStats = [...aboutData.stats];
+                      newStats[idx].label = e.target.value;
+                      setAboutData({ ...aboutData, stats: newStats });
+                    }}
+                    placeholder="Label"
+                    className="border border-stone-200 rounded-lg px-3 py-2 text-sm font-sans"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column - Bio & Specialties */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white rounded-xl border border-stone-200 shadow-sm p-8 space-y-5">
+            <h3 className="font-serif text-lg text-stone-800 border-b border-stone-100 pb-3">Biography</h3>
+            
+            <div>
+              <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Heading Subtitle</label>
+              <input
+                type="text"
+                value={aboutData.subtitle}
+                onChange={(e) => setAboutData({ ...aboutData, subtitle: e.target.value })}
+                className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700"
+              />
+            </div>
+
+            <div>
+              <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Main Heading</label>
+              <input
+                type="text"
+                value={aboutData.title}
+                onChange={(e) => setAboutData({ ...aboutData, title: e.target.value })}
+                className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700"
+              />
+            </div>
+
+            <div>
+              <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Bio Paragraph 1</label>
+              <textarea
+                value={aboutData.description1}
+                onChange={(e) => setAboutData({ ...aboutData, description1: e.target.value })}
+                rows={4}
+                className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700"
+              />
+            </div>
+
+            <div>
+              <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Bio Paragraph 2</label>
+              <textarea
+                value={aboutData.description2}
+                onChange={(e) => setAboutData({ ...aboutData, description2: e.target.value })}
+                rows={4}
+                className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700"
+              />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-stone-200 shadow-sm p-8">
+            <h3 className="font-serif text-lg text-stone-800 border-b border-stone-100 pb-3 mb-5">Specialties</h3>
+            
+            <div className="flex flex-wrap gap-2 mb-4">
+              {aboutData.specialties.map((item, idx) => (
+                <div key={idx} className="flex items-center gap-2 bg-stone-100 px-3 py-1.5 rounded-full text-stone-600 text-sm">
+                  {item}
+                  <button onClick={() => removeSpecialty(idx)} className="hover:text-red-500">
+                    <XCircle size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newSpecialty}
+                onChange={(e) => setNewSpecialty(e.target.value)}
+                placeholder="Add new specialty..."
+                onKeyPress={(e) => e.key === 'Enter' && addSpecialty()}
+                className="flex-1 border border-stone-200 rounded-lg px-4 py-2 text-sm"
+              />
+              <button onClick={addSpecialty} className="p-2 bg-gold-500 text-white rounded-lg hover:bg-gold-600 transition-colors">
+                <PlusCircle size={20} />
+              </button>
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-4">
+            <button onClick={handleSave} className="btn-gold flex items-center gap-2">
+              <Check size={18} />
+              Save All Profile Changes
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1589,6 +2146,221 @@ function ReviewsTab() {
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────── Enquiries Tab ─────────────── */
+function EnquiriesTab() {
+  const { enquiries, loading, refetch } = useEnquiries();
+  const { showToast } = useToast();
+
+  const handleStatusChange = async (id: string, status: Enquiry['status']) => {
+    try {
+      await updateEnquiryStatus(id, status);
+      showToast('success', 'Enquiry updated');
+      refetch();
+    } catch (err) {
+      showToast('error', 'Failed to update enquiry');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this enquiry?')) return;
+    try {
+      await deleteEnquiry(id);
+      showToast('success', 'Enquiry deleted');
+      refetch();
+    } catch (err) {
+      showToast('error', 'Failed to delete enquiry');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 size={40} className="text-gold-500 animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="font-serif text-3xl text-stone-800">New Enquiries</h1>
+        <p className="font-sans text-stone-400 text-sm mt-1">Manage leads from your website</p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4">
+        {enquiries.length === 0 ? (
+          <div className="bg-white rounded-xl border border-stone-200 p-12 text-center">
+            <MessageSquare size={48} className="text-stone-200 mx-auto mb-4" />
+            <p className="text-stone-500 font-sans">No enquiries found</p>
+          </div>
+        ) : (
+          enquiries.map((enq) => (
+            <div key={enq.id} className={`bg-white rounded-xl border ${enq.status === 'new' ? 'border-gold-300 ring-1 ring-gold-100' : 'border-stone-200'} shadow-sm p-6 hover:shadow-md transition-shadow`}>
+              <div className="flex flex-col md:flex-row gap-6">
+                <div className="flex-1 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <h3 className="font-serif text-xl text-stone-800">{enq.name}</h3>
+                    {enq.status === 'new' && (
+                      <span className="bg-gold-500 text-white text-[10px] px-2 py-0.5 rounded-full font-sans uppercase tracking-widest">New</span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-6 text-sm">
+                    <div className="flex items-center gap-2 text-stone-600">
+                      <Phone size={14} className="text-stone-400" />
+                      {enq.phone}
+                    </div>
+                    <div className="flex items-center gap-2 text-stone-600">
+                      <Mail size={14} className="text-stone-400" />
+                      {enq.email}
+                    </div>
+                    <div className="flex items-center gap-2 text-stone-600">
+                      <Bell size={14} className="text-stone-400" />
+                      {enq.eventType}
+                    </div>
+                    <div className="flex items-center gap-2 text-stone-600">
+                      <TrendingUp size={14} className="text-stone-400" />
+                      {new Date(enq.eventDate).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <p className="text-stone-600 text-sm bg-stone-50 p-3 rounded-lg border border-stone-100">
+                    "{enq.message}"
+                  </p>
+                </div>
+                
+                <div className="flex md:flex-col gap-2 justify-end">
+                  <select
+                    value={enq.status}
+                    onChange={(e) => handleStatusChange(enq.id, e.target.value as any)}
+                    className="border border-stone-200 rounded-lg px-3 py-2 text-xs font-sans focus:border-gold-400 focus:outline-none"
+                  >
+                    <option value="new">Mark as New</option>
+                    <option value="read">Mark as Read</option>
+                    <option value="contacted">Mark as Contacted</option>
+                    <option value="booked">Mark as Booked</option>
+                  </select>
+                  <button
+                    onClick={() => window.open(`https://wa.me/${enq.phone.replace(/[^0-9]/g, '')}`, '_blank')}
+                    className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-green-500 hover:bg-green-600 text-white text-xs font-sans transition-colors"
+                  >
+                    <MessageSquare size={14} /> WhatsApp
+                  </button>
+                  <button
+                    onClick={() => handleDelete(enq.id)}
+                    className="p-2 text-stone-400 hover:text-red-500 transition-colors"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────── Calendar Tab ─────────────── */
+function CalendarTab() {
+  const { availability, loading, refetch } = useAvailability();
+  const { showToast } = useToast();
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [note, setNote] = useState('');
+  const [status, setStatus] = useState<Availability['status']>('busy');
+
+  const handleUpdate = async () => {
+    try {
+      await updateAvailability(selectedDate, status, note);
+      showToast('success', 'Availability updated');
+      refetch();
+      setNote('');
+    } catch (err) {
+      showToast('error', 'Failed to update availability');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 size={40} className="text-gold-500 animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="font-serif text-3xl text-stone-800">Availability Calendar</h1>
+        <p className="font-sans text-stone-400 text-sm mt-1">Mark dates as busy or tentative</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-1 bg-white rounded-xl border border-stone-200 shadow-sm p-6 space-y-4">
+          <h3 className="font-serif text-lg text-stone-800 border-b border-stone-100 pb-3">Mark a Date</h3>
+          <div>
+            <label className="font-sans text-xs text-stone-400 uppercase mb-2 block">Date</label>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="w-full border border-stone-200 rounded-lg px-4 py-3 text-sm focus:border-gold-400 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="font-sans text-xs text-stone-400 uppercase mb-2 block">Status</label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value as any)}
+              className="w-full border border-stone-200 rounded-lg px-4 py-3 text-sm focus:border-gold-400 focus:outline-none"
+            >
+              <option value="busy">Busy (Booked)</option>
+              <option value="tentative">Tentative (Enquiry)</option>
+              <option value="available">Available</option>
+            </select>
+          </div>
+          <div>
+            <label className="font-sans text-xs text-stone-400 uppercase mb-2 block">Note (Optional)</label>
+            <input
+              type="text"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="e.g. Wedding at Madurai"
+              className="w-full border border-stone-200 rounded-lg px-4 py-3 text-sm focus:border-gold-400 focus:outline-none"
+            />
+          </div>
+          <button onClick={handleUpdate} className="w-full btn-gold py-3">Update Availability</button>
+        </div>
+
+        <div className="lg:col-span-2 bg-white rounded-xl border border-stone-200 shadow-sm p-6">
+          <h3 className="font-serif text-lg text-stone-800 border-b border-stone-100 pb-3 mb-4">Booked Dates</h3>
+          <div className="space-y-3">
+            {availability.filter(a => a.status !== 'available').length === 0 ? (
+              <p className="text-stone-400 text-sm italic py-8 text-center">No busy dates marked yet</p>
+            ) : (
+              availability.filter(a => a.status !== 'available').map((a) => (
+                <div key={a.id} className="flex items-center justify-between p-4 bg-stone-50 rounded-lg border border-stone-100">
+                  <div>
+                    <p className="font-sans font-medium text-stone-700">{new Date(a.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    <p className="font-sans text-xs text-stone-400">{a.note || 'No notes'}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-sans uppercase tracking-widest ${a.status === 'busy' ? 'bg-red-100 text-red-600' : 'bg-gold-100 text-gold-600'}`}>
+                      {a.status}
+                    </span>
+                    <button onClick={() => deleteAvailability(a.id).then(refetch)} className="text-stone-300 hover:text-red-500 transition-colors">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

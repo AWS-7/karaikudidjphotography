@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import type { GalleryImage } from '../data/events';
 

@@ -26,7 +26,7 @@ export function useEvents() {
         (eventsData || []).map(async (event: any) => {
           const { data: imagesData, error: imagesError } = await supabase
             .from('gallery_images')
-            .select('id, image_url, alt_text')
+            .select('id, image_url, storage_path, alt_text')
             .eq('event_id', event.id);
 
           if (imagesError) throw imagesError;
@@ -34,6 +34,7 @@ export function useEvents() {
           const images: GalleryImage[] = (imagesData || []).map((img: any) => ({
             id: img.id,
             src: img.image_url,
+            storagePath: img.storage_path,
             alt: img.alt_text || 'Gallery image',
             width: 1200,
             height: 800,
@@ -97,7 +98,7 @@ export function useEvent(slug: string | undefined) {
         // Fetch images
         const { data: imagesData, error: imagesError } = await supabase
           .from('gallery_images')
-          .select('*')
+          .select('id, image_url, storage_path, alt_text, created_at')
           .eq('event_id', eventData.id)
           .order('created_at', { ascending: true });
 
@@ -106,6 +107,7 @@ export function useEvent(slug: string | undefined) {
         const images: GalleryImage[] = (imagesData || []).map((img: any) => ({
           id: img.id,
           src: img.image_url,
+          storagePath: img.storage_path,
           alt: img.alt_text || 'Gallery image',
           width: 1200,
           height: 800,
@@ -139,8 +141,8 @@ export async function createEvent(eventData: {
   event_name: string;
   slug: string;
   category: string;
-  event_date: string;
-  location: string;
+  event_date?: string;
+  location?: string;
   description?: string;
   cover_image?: string;
 }) {
@@ -161,10 +163,10 @@ export async function updateEvent(
     event_name: string;
     slug: string;
     category: string;
-    event_date: string;
-    location: string;
-    description: string;
-    cover_image: string;
+    event_date?: string;
+    location?: string;
+    description?: string;
+    cover_image?: string;
   }>
 ) {
   const { data, error } = await supabase
@@ -191,33 +193,44 @@ export async function deleteEvent(id: string) {
 
     if (images && images.length > 0) {
       const paths = images
-        .map((img: any) => img.storage_path)
-        .filter((path): path is string => !!path);
+        .map((img: any) => img.storage_path as string)
+        .filter((path: string): path is string => !!path);
       
       if (paths.length > 0) {
-        const { error: storageError } = await supabase.storage.from('gallery').remove(paths);
-        if (storageError) {
-          console.warn('Storage removal warning:', storageError);
-          // Continue anyway to delete from DB
+        // Delete in chunks of 100 to avoid Supabase limits
+        for (let i = 0; i < paths.length; i += 100) {
+          const chunk = paths.slice(i, i + 100);
+          const { error: storageError } = await supabase.storage.from('gallery').remove(chunk);
+          if (storageError) {
+            console.warn('Storage removal warning for chunk:', storageError);
+          }
         }
       }
     }
 
-    // Then delete the event (images in DB will be deleted via cascade if configured, 
-    // but let's delete them manually to be sure)
-    const { error: imagesDbError } = await supabase
+    // Then delete the event
+    // We use .select() to verify that the deletion actually happened
+    const { data: deletedImages, error: imagesDbError } = await supabase
       .from('gallery_images')
       .delete()
-      .eq('event_id', id);
+      .eq('event_id', id)
+      .select();
     
     if (imagesDbError) throw imagesDbError;
 
-    const { error: eventError } = await supabase
+    const { data: deletedEvent, error: eventError } = await supabase
       .from('events')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .select();
 
     if (eventError) throw eventError;
+
+    // If nothing was returned by .select(), it means no rows were deleted
+    if (!deletedEvent || deletedEvent.length === 0) {
+      throw new Error('No event was deleted. This might be due to database permissions (RLS).');
+    }
+
     return true;
   } catch (err) {
     console.error('Delete event error:', err);

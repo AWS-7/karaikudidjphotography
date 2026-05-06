@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, MessageCircle, Images } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -15,24 +15,63 @@ const DEFAULT_HERO = {
   stat3Value: '100%',
   stat3Label: 'Happy Clients',
   bgImage: 'https://images.pexels.com/photos/1456613/pexels-photo-1456613.jpeg?auto=compress&cs=tinysrgb&w=1920',
+  bgImages: ['https://images.pexels.com/photos/1456613/pexels-photo-1456613.jpeg?auto=compress&cs=tinysrgb&w=1920'],
 };
 
 function loadHeroData() {
   try {
     const stored = localStorage.getItem(HERO_STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return {
+        ...DEFAULT_HERO,
+        ...parsed,
+        bgImages: parsed.bgImages || [parsed.bgImage || DEFAULT_HERO.bgImage]
+      };
+    }
   } catch { /* ignore */ }
   return DEFAULT_HERO;
 }
 
 export default function Hero() {
   const [heroData, setHeroData] = useState(loadHeroData());
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const images = heroData.bgImages || [heroData.bgImage];
 
   useEffect(() => {
     const handleFocus = () => setHeroData(loadHeroData());
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === HERO_STORAGE_KEY) {
+        setHeroData(loadHeroData());
+      }
+    };
     window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
+    window.addEventListener('storage', handleStorage);
+    
+    // Poll for changes as a fallback
+    const interval = setInterval(() => setHeroData(loadHeroData()), 2000);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('storage', handleStorage);
+      clearInterval(interval);
+    };
   }, []);
+
+  // Slider effect
+  useEffect(() => {
+    if (images.length <= 1) {
+      setCurrentIndex(0);
+      return;
+    }
+    
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % images.length);
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, [images.length]);
 
   const scrollToGallery = () => {
     document.getElementById('gallery')?.scrollIntoView({ behavior: 'smooth' });
@@ -41,18 +80,24 @@ export default function Hero() {
   const titleParts = heroData.title.split('Light');
 
   return (
-    <section className="relative w-full h-[85vh] sm:h-screen min-h-[500px] sm:min-h-[600px] overflow-hidden">
-      {/* Background Image */}
+    <section className="relative w-full h-[85vh] sm:h-screen min-h-[500px] sm:min-h-[600px] overflow-hidden bg-stone-900">
+      {/* Background Slider */}
       <div className="absolute inset-0 overflow-hidden">
-        <img
-          src={heroData.bgImage}
-          alt="Wedding photography by DJ Photography Karaikudi"
-          className="w-full h-full object-cover object-center"
-          style={{
-            animation: 'heroZoom 20s ease-in-out infinite alternate',
-            transform: 'scale(1.05)',
-          }}
-        />
+        <AnimatePresence mode="popLayout">
+          <motion.img
+            key={images[currentIndex]}
+            src={images[currentIndex]}
+            initial={{ opacity: 0, scale: 1.1 }}
+            animate={{ opacity: 1, scale: 1.05 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.5, ease: "easeInOut" }}
+            alt="Wedding photography by DJ Photography Karaikudi"
+            className="w-full h-full object-cover object-center absolute inset-0"
+            style={{
+              animation: 'heroZoom 20s ease-in-out infinite alternate',
+            }}
+          />
+        </AnimatePresence>
       </div>
 
       {/* Overlay */}
