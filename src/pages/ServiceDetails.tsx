@@ -5,6 +5,7 @@ import { useSiteSettings } from '../hooks/useSiteSettings';
 import { useEvents } from '../hooks/useEvents';
 import { motion, useInView } from 'framer-motion';
 import type { Service } from '../types/database';
+import SEO from '../components/SEO';
 
 const iconMap: Record<string, any> = {
   Wedding: Heart,
@@ -78,6 +79,12 @@ export default function ServiceDetails() {
 
   return (
     <div className="min-h-screen bg-stone-50 pt-24 pb-16">
+      <SEO 
+        title={`${service.title} in Karaikudi | DJ Photography - Dass`}
+        description={`${service.description} Professional ${service.title} services by Dass in Karaikudi and surrounding areas.`}
+        url={`https://karaikudidjphotography.com/service/${id}`}
+      />
+      <h2 className="sr-only">{service.title} Photography Services in Karaikudi by DJ Photography Dass</h2>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Back Button */}
         <button

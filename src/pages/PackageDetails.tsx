@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Check, X, ArrowLeft, MessageCircle, Clock, Camera, Users, Film, Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { usePackages } from '../hooks/usePackages';
+import SEO from '../components/SEO';
 import img1 from '../images/1778054327731.jpg';
 import img2 from '../images/1778054327722.jpg';
 import img3 from '../images/1778054327710.jpg';
@@ -46,6 +47,12 @@ export default function PackageDetails() {
 
   return (
     <div className="min-h-screen bg-stone-50 pt-24 pb-16 relative z-0">
+      <SEO 
+        title={`${pkg.name} Photography Package | DJ Photography Karaikudi`}
+        description={`Affordable ${pkg.name} photography package starting at ₹${pkg.price.toLocaleString('en-IN')}. Best photography deals in Karaikudi by Dass.`}
+        url={`https://karaikudidjphotography.com/package/${id}`}
+      />
+      <h2 className="sr-only">{pkg.name} Photography Package Details - DJ Photography Dass Karaikudi</h2>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Back Button */}
         <button

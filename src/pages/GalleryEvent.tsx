@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Images, ZoomIn, Loader2 } from 'lucide-react';
 import { useEvent } from '../hooks/useEvents';
 import Lightbox from '../components/Lightbox';
+import SEO from '../components/SEO';
 
 export default function GalleryEvent() {
   const { slug } = useParams<{ slug: string }>();
@@ -54,6 +55,13 @@ export default function GalleryEvent() {
 
   return (
     <div className="min-h-screen bg-cream-50">
+      <SEO 
+        title={`${event.name} Portfolio | DJ Photography Karaikudi`}
+        description={`View the professional photography of ${event.name} in ${event.location}. Capturing memories by DJ Photography Dass.`}
+        image={event.coverImage}
+        url={`https://karaikudidjphotography.com/gallery/${slug}`}
+      />
+      <h2 className="sr-only">{event.name} - Photography Portfolio by DJ Photography Dass Karaikudi</h2>
       {/* Hero Banner */}
       <div className="relative h-72 md:h-96 overflow-hidden">
         <img
