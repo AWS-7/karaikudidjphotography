@@ -3,11 +3,16 @@ import { motion, useInView } from 'framer-motion';
 import { Phone, Mail, Instagram, MapPin, Send, MessageCircle, Loader2 } from 'lucide-react';
 import { createEnquiry } from '../hooks/useEnquiries';
 import { useToast } from '../contexts/ToastContext';
+import { useSiteSettings } from '../hooks/useSiteSettings';
+import type { FontSettings } from '../types/database';
+import { DEFAULT_FONT_SETTINGS } from '../data/fontSettings';
 
 export default function Contact() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '-80px' });
   const { showToast } = useToast();
+  const { data: fontSettings } = useSiteSettings<FontSettings>('font_settings', DEFAULT_FONT_SETTINGS);
+  const contactFont = fontSettings.contact || DEFAULT_FONT_SETTINGS.contact;
   const [formState, setFormState] = useState({ 
     name: '', 
     phone: '', 
@@ -60,13 +65,13 @@ export default function Contact() {
           transition={{ duration: 0.7 }}
           className="text-center mb-16"
         >
-          <span className="section-heading">Get In Touch</span>
-          <h2 className="section-title">
+          <span className={`${contactFont.subtitle} section-heading`}>Get In Touch</span>
+          <h2 className={`${contactFont.title} section-title`}>
             Let's Create{' '}
             <span className="italic text-gold-600">Magic Together</span>
           </h2>
           <span className="gold-divider" />
-          <p className="font-sans text-stone-500 mt-6 max-w-xl mx-auto text-base">
+          <p className={`${contactFont.text} text-stone-500 mt-6 max-w-xl mx-auto text-base`}>
             Ready to book your wedding photography? Reach out and let's discuss your dream shoot.
           </p>
         </motion.div>
@@ -80,7 +85,7 @@ export default function Contact() {
             className="lg:col-span-2 space-y-8"
           >
             <div>
-              <h3 className="font-serif text-2xl text-stone-800 mb-6">Contact Details</h3>
+              <h3 className={`${contactFont.title} text-2xl text-stone-800 mb-6`}>Contact Details</h3>
               <div className="space-y-5">
                 {[
                   {

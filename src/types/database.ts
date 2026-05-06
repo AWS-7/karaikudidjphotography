@@ -180,8 +180,36 @@ export interface Database {
 }
 
 export interface SiteSettings {
-  key: 'hero_data' | 'about_data' | 'testimonials_data' | 'services_data' | 'categories_data';
+  key: 'hero_data' | 'about_data' | 'testimonials_data' | 'services_data' | 'categories_data' | 'font_settings';
   value: any;
+}
+
+export interface FontSettings {
+  hero: {
+    subtitle: string;
+    title: string;
+    text: string;
+  };
+  about: {
+    subtitle: string;
+    title: string;
+    text: string;
+  };
+  services: {
+    subtitle: string;
+    title: string;
+    text: string;
+  };
+  contact: {
+    subtitle: string;
+    title: string;
+    text: string;
+  };
+  testimonials: {
+    subtitle: string;
+    title: string;
+    text: string;
+  };
 }
 
 export interface Service {

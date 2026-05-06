@@ -2,7 +2,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, MessageCircle, Images } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useSiteSettings } from '../hooks/useSiteSettings';
-import type { HeroData } from '../types/database';
+import type { FontSettings, HeroData } from '../types/database';
+import { DEFAULT_FONT_SETTINGS } from '../data/fontSettings';
 
 const DEFAULT_HERO: HeroData = {
   subtitle: 'DJ Photography',
@@ -20,6 +21,8 @@ const DEFAULT_HERO: HeroData = {
 
 export default function Hero() {
   const { data: heroData } = useSiteSettings<HeroData>('hero_data', DEFAULT_HERO);
+  const { data: fontSettings } = useSiteSettings<FontSettings>('font_settings', DEFAULT_FONT_SETTINGS);
+  const heroFont = fontSettings.hero || DEFAULT_FONT_SETTINGS.hero;
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const images = heroData.bgImages || [heroData.bgImage || DEFAULT_HERO.bgImage];
@@ -50,6 +53,9 @@ export default function Hero() {
           <motion.img
             key={images[currentIndex]}
             src={images[currentIndex]}
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
             initial={{ opacity: 0, scale: 1.1 }}
             animate={{ opacity: 1, scale: 1.05 }}
             exit={{ opacity: 0 }}
@@ -85,7 +91,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.8 }}
-          className="font-script text-gold-300 text-2xl sm:text-3xl md:text-4xl mb-2 sm:mb-4 block"
+          className={`${heroFont.subtitle} text-gold-300 text-2xl sm:text-3xl md:text-4xl mb-2 sm:mb-4 block`}
         >
           {heroData.subtitle}
         </motion.span>
@@ -94,7 +100,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.9 }}
-          className="font-serif text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-light text-white text-shadow max-w-5xl leading-none mb-3 sm:mb-6 px-2 sm:px-0"
+          className={`${heroFont.title} text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-light text-white text-shadow max-w-5xl leading-none mb-3 sm:mb-6 px-2 sm:px-0`}
         >
           {heroData.title}
         </motion.h1>
@@ -103,7 +109,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7, duration: 0.8 }}
-          className="font-sans text-cream-200 text-sm sm:text-lg md:text-xl tracking-widest uppercase font-light mb-6 sm:mb-10 text-shadow-sm px-4 sm:px-0"
+          className={`${heroFont.text} text-cream-200 text-sm sm:text-lg md:text-xl tracking-widest uppercase font-light mb-6 sm:mb-10 text-shadow-sm px-4 sm:px-0`}
         >
           {heroData.tagline}
         </motion.p>
@@ -121,8 +127,8 @@ export default function Hero() {
             { value: heroData.stat3Value, label: heroData.stat3Label },
           ].map((stat) => (
             <div key={stat.label} className="text-center">
-              <div className="font-serif text-xl sm:text-2xl md:text-3xl text-gold-300 font-light">{stat.value}</div>
-              <div className="font-sans text-cream-300/70 text-[10px] sm:text-xs tracking-widest uppercase mt-1">{stat.label}</div>
+              <div className={`${heroFont.text} text-xl sm:text-2xl md:text-3xl text-gold-300 font-light`}>{stat.value}</div>
+              <div className={`${heroFont.text} text-cream-300/70 text-[10px] sm:text-xs tracking-widest uppercase mt-1`}>{stat.label}</div>
             </div>
           ))}
         </motion.div>

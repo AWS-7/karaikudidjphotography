@@ -24,6 +24,7 @@ import {
   ImageIcon,
   Search,
   Pencil,
+  Type,
   Phone,
   Mail,
 } from 'lucide-react';
@@ -36,8 +37,9 @@ import { useAvailability, updateAvailability, deleteAvailability } from '../hook
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { useImageUpload, deleteImage } from '../hooks/useImages';
 import { useToast } from '../contexts/ToastContext';
-import type { Event, Enquiry, Availability, AboutData, HeroData, Service } from '../types/database';
+import type { Event, Enquiry, Availability, AboutData, HeroData, Service, FontSettings } from '../types/database';
 import { saveTestimonials, loadTestimonials, type Testimonial } from '../data/testimonials';
+import { DEFAULT_FONT_SETTINGS, FONT_FAMILIES } from '../data/fontSettings';
 import img1 from '../images/1778054327731.jpg';
 import img2 from '../images/1778054327722.jpg';
 import img3 from '../images/1778054327710.jpg';
@@ -55,6 +57,7 @@ const navItems: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'gallery', label: 'Manage Gallery', icon: Images },
   { id: 'add-event', label: 'Add Event', icon: PlusCircle },
   { id: 'categories', label: 'Categories', icon: Star },
+  { id: 'font-settings', label: 'Font Settings', icon: Type },
   { id: 'upload', label: 'Upload Images', icon: Upload },
   { id: 'services', label: 'Services List', icon: Camera },
   { id: 'packages', label: 'Packages', icon: Package },
@@ -192,7 +195,7 @@ export default function Admin() {
             </div>
 
             {/* Nav */}
-            <nav className="flex-1 px-3 py-6 space-y-1">
+            <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-6 space-y-1">
               {navItems.map((item) => (
                 <button
                   key={item.id}
@@ -280,6 +283,7 @@ export default function Admin() {
               {activeTab === 'gallery' && <GalleryTab />}
               {activeTab === 'add-event' && <AddEventTab />}
               {activeTab === 'categories' && <CategoriesTab />}
+              {activeTab === 'font-settings' && <FontSettingsTab />}
               {activeTab === 'upload' && <UploadTab dragOver={dragOver} setDragOver={setDragOver} />}
               {activeTab === 'packages' && <PackagesTab />}
               {activeTab === 'services' && <ServicesTab />}
@@ -1049,6 +1053,118 @@ function CategoriesTab() {
               <p className="font-sans text-sm text-stone-500">No categories configured yet.</p>
             )}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FontSettingsTab() {
+  const { showToast } = useToast();
+  const { data: fontSettings = DEFAULT_FONT_SETTINGS, updateSettings } = useSiteSettings<FontSettings>('font_settings', DEFAULT_FONT_SETTINGS);
+  const [config, setConfig] = useState<FontSettings>(fontSettings);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setConfig(fontSettings);
+  }, [fontSettings]);
+
+  const sectionList = [
+    { key: 'hero', label: 'Hero' },
+    { key: 'about', label: 'About' },
+    { key: 'services', label: 'Services' },
+    { key: 'contact', label: 'Contact' },
+    { key: 'testimonials', label: 'Testimonials' },
+  ] as const;
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await updateSettings(config);
+      showToast('success', 'Font settings saved');
+    } catch (err) {
+      console.error('Font settings save failed:', err);
+      showToast('error', 'Unable to save font settings');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateSection = (section: keyof FontSettings, field: keyof FontSettings['hero'], value: string) => {
+    setConfig((prev) => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [field]: value,
+      },
+    }));
+  };
+
+  return (
+    <div className="space-y-6 max-w-4xl">
+      <div>
+        <h1 className="font-serif text-3xl text-stone-800">Font Settings</h1>
+        <p className="font-sans text-stone-400 text-sm mt-1">Customize section-wise font families for your website.</p>
+      </div>
+
+      <div className="bg-white rounded-xl border border-stone-200 shadow-sm p-6 space-y-6">
+        {sectionList.map((section) => (
+          <div key={section.key} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end p-4 border-b border-stone-100 last:border-none">
+            <div>
+              <p className="font-sans text-sm text-stone-500 uppercase tracking-[0.2em] mb-2">{section.label}</p>
+              <p className="font-serif text-xl text-stone-800">Section Fonts</p>
+            </div>
+
+            <div>
+              <label className="font-sans text-xs text-stone-400 uppercase tracking-widest mb-2 block">Subtitle Font</label>
+              <select
+                value={config[section.key].subtitle}
+                onChange={(e) => updateSection(section.key, 'subtitle', e.target.value)}
+                className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors"
+              >
+                {FONT_FAMILIES.map((family) => (
+                  <option key={family} value={family}>{family.replace('font-', '')}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="font-sans text-xs text-stone-400 uppercase tracking-widest mb-2 block">Heading Font</label>
+              <select
+                value={config[section.key].title}
+                onChange={(e) => updateSection(section.key, 'title', e.target.value)}
+                className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors"
+              >
+                {FONT_FAMILIES.map((family) => (
+                  <option key={family} value={family}>{family.replace('font-', '')}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="font-sans text-xs text-stone-400 uppercase tracking-widest mb-2 block">Body Font</label>
+              <select
+                value={config[section.key].text}
+                onChange={(e) => updateSection(section.key, 'text', e.target.value)}
+                className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors"
+              >
+                {FONT_FAMILIES.map((family) => (
+                  <option key={family} value={family}>{family.replace('font-', '')}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        ))}
+
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="bg-gold-600 text-white rounded-lg px-6 py-3 text-sm font-sans hover:bg-gold-700 transition-colors disabled:opacity-50"
+          >
+            {saving ? 'Saving...' : 'Save Typography'}
+          </button>
         </div>
       </div>
     </div>

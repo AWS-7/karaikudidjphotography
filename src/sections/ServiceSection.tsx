@@ -3,7 +3,8 @@ import { motion, useInView } from 'framer-motion';
 import { Camera, Heart, Users, Calendar, Baby, Star, Briefcase, UserCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSiteSettings } from '../hooks/useSiteSettings';
-import type { Service } from '../types/database';
+import type { Service, FontSettings } from '../types/database';
+import { DEFAULT_FONT_SETTINGS } from '../data/fontSettings';
 
 const iconMap: Record<string, any> = {
   Wedding: Heart,
@@ -36,6 +37,8 @@ export default function ServiceSection() {
   const navigate = useNavigate();
   const inView = useInView(sectionRef, { once: true, margin: '-50px' });
   const { data: services } = useSiteSettings<Service[]>('services_data', DEFAULT_SERVICES);
+  const { data: fontSettings } = useSiteSettings<FontSettings>('font_settings', DEFAULT_FONT_SETTINGS);
+  const servicesFont = fontSettings.services || DEFAULT_FONT_SETTINGS.services;
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -81,7 +84,7 @@ export default function ServiceSection() {
           <motion.span
             initial={{ opacity: 0, y: 20 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
-            className="font-script text-gold-500 text-2xl mb-2 block"
+            className={`${servicesFont.subtitle} text-gold-500 text-2xl mb-2 block`}
           >
             Our Expertise
           </motion.span>
@@ -89,7 +92,7 @@ export default function ServiceSection() {
             initial={{ opacity: 0, y: 30 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 0.1 }}
-            className="font-serif text-4xl md:text-5xl font-light text-stone-800"
+            className={`${servicesFont.title} text-4xl md:text-5xl font-light text-stone-800`}
           >
             Photography <span className="italic text-gold-600">Services</span>
           </motion.h2>
@@ -139,6 +142,8 @@ export default function ServiceSection() {
                   <img
                     src={service.image}
                     alt={service.title}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
@@ -149,9 +154,9 @@ export default function ServiceSection() {
                     <div className="p-2 bg-gold-500/20 backdrop-blur-md rounded-lg">
                       <Icon size={20} className="text-gold-400" />
                     </div>
-                    <h3 className="font-serif text-xl font-medium">{service.title}</h3>
+                    <h3 className={`${servicesFont.title} text-xl font-medium`}>{service.title}</h3>
                   </div>
-                  <p className="font-sans text-sm text-white/70 line-clamp-2 group-hover:line-clamp-none transition-all duration-300">
+                  <p className={`${servicesFont.text} text-sm text-white/70 line-clamp-2 group-hover:line-clamp-none transition-all duration-300`}>
                     {service.description}
                   </p>
                 </div>

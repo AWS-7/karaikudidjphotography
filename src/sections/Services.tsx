@@ -3,6 +3,9 @@ import { motion, useInView } from 'framer-motion';
 import { Eye, ArrowRight, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePackages } from '../hooks/usePackages';
+import { useSiteSettings } from '../hooks/useSiteSettings';
+import type { FontSettings } from '../types/database';
+import { DEFAULT_FONT_SETTINGS } from '../data/fontSettings';
 import img1 from '../images/1778054327731.jpg';
 import img2 from '../images/1778054327722.jpg';
 import img3 from '../images/1778054327710.jpg';
@@ -16,12 +19,14 @@ export default function Services() {
   const inView = useInView(ref, { once: true, margin: '-80px' });
   const navigate = useNavigate();
   const { packages, loading } = usePackages();
+  const { data: fontSettings } = useSiteSettings<FontSettings>('font_settings', DEFAULT_FONT_SETTINGS);
+  const servicesFont = fontSettings.services || DEFAULT_FONT_SETTINGS.services;
 
   return (
     <section id="services" className="py-20 sm:py-28 bg-stone-50 relative overflow-hidden" ref={ref}>
       {/* Background decorative image */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.03]">
-        <img src={img5} alt="" className="w-full h-full object-cover" />
+        <img src={img5} alt="" loading="lazy" decoding="async" fetchPriority="low" className="w-full h-full object-cover" />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -39,7 +44,7 @@ export default function Services() {
             className="inline-flex items-center gap-3 mb-4"
           >
             <span className="h-px w-12 bg-gold-400" />
-            <span className="font-sans text-gold-600 text-xs tracking-[0.3em] uppercase font-semibold">
+            <span className={`${servicesFont.subtitle} text-gold-600 text-xs tracking-[0.3em] uppercase font-semibold`}>
               Our Pricing
             </span>
             <span className="h-px w-12 bg-gold-400" />
@@ -49,7 +54,7 @@ export default function Services() {
             initial={{ opacity: 0, y: 30 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 0.2, duration: 0.8 }}
-            className="font-serif text-4xl sm:text-5xl md:text-6xl font-light text-stone-800 leading-tight"
+            className={`${servicesFont.title} text-4xl sm:text-5xl md:text-6xl font-light text-stone-800 leading-tight`}
           >
             Photography{' '}
             <span className="relative inline-block">
@@ -67,7 +72,7 @@ export default function Services() {
             initial={{ opacity: 0 }}
             animate={inView ? { opacity: 1 } : {}}
             transition={{ delay: 0.4, duration: 0.6 }}
-            className="font-sans text-stone-500 mt-6 max-w-xl mx-auto text-base leading-relaxed"
+            className={`${servicesFont.text} text-stone-500 mt-6 max-w-xl mx-auto text-base leading-relaxed`}
           >
             Choose a package that fits your vision. Every package includes our signature
             candid storytelling style and full post-processing.
@@ -113,21 +118,21 @@ export default function Services() {
                     {/* Content overlay - name + price only */}
                     <div className="absolute inset-0 flex flex-col justify-end p-6 sm:p-8">
                       <div>
-                        <h3 className="font-serif text-3xl sm:text-4xl font-light text-white mb-2">
+                        <h3 className={`${servicesFont.title} text-3xl sm:text-4xl font-light text-white mb-2`}>
                           {pkg.name}
                         </h3>
                         <div className="flex items-baseline gap-1">
-                          <span className="font-serif text-3xl sm:text-4xl font-light text-gold-300">
+                          <span className={`${servicesFont.title} text-3xl sm:text-4xl font-light text-gold-300`}>
                             ₹{pkg.price.toLocaleString('en-IN')}
                           </span>
-                          <span className="font-sans text-white/50 text-xs">{pkg.priceNote}</span>
+                          <span className={`${servicesFont.text} text-white/50 text-xs`}>{pkg.priceNote}</span>
                         </div>
                       </div>
 
                       {/* View Button */}
                       <button
                         onClick={() => navigate(`/package/${pkg.id}`)}
-                        className={`mt-5 inline-flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-sans text-sm font-semibold tracking-wider uppercase transition-all duration-300 cursor-pointer ${
+                        className={`mt-5 inline-flex items-center justify-center gap-2 py-3 px-6 rounded-xl ${servicesFont.text} text-sm font-semibold tracking-wider uppercase transition-all duration-300 cursor-pointer ${
                           pkg.popular
                             ? 'bg-gold-500 text-white hover:bg-gold-400 shadow-lg shadow-gold-500/25'
                             : 'bg-white/10 text-white backdrop-blur-sm border border-white/20 hover:bg-white hover:text-stone-900'

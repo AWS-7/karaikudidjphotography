@@ -3,7 +3,8 @@ import { motion, useInView } from 'framer-motion';
 import { Camera, Award, Heart, Star, Loader2 } from 'lucide-react';
 import dassPhoto from '../images/1778045046784.jpg';
 import { useSiteSettings } from '../hooks/useSiteSettings';
-import type { AboutData } from '../types/database';
+import type { AboutData, FontSettings } from '../types/database';
+import { DEFAULT_FONT_SETTINGS } from '../data/fontSettings';
 
 const iconMap = {
   Camera,
@@ -41,6 +42,8 @@ export default function About() {
   const ref = useRef<HTMLElement>(null);
   const inView = useInView(ref, { once: true, margin: '-50px' });
   const { data: aboutData } = useSiteSettings<AboutData>('about_data', defaultAboutData);
+  const { data: fontSettings } = useSiteSettings<FontSettings>('font_settings', DEFAULT_FONT_SETTINGS);
+  const aboutFont = fontSettings.about || DEFAULT_FONT_SETTINGS.about;
 
   // Safety fallbacks
   const stats = aboutData?.stats || defaultAboutData.stats;
@@ -72,6 +75,8 @@ export default function About() {
                 <img
                   src={image}
                   alt={`${name} - DJ Photography Karaikudi`}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-[420px] sm:h-[450px] lg:h-[560px] object-cover object-top transition-opacity duration-500"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = dassPhoto;
@@ -110,7 +115,7 @@ export default function About() {
                 className="inline-flex items-center gap-3 mb-4"
               >
                 <span className="h-px w-12 bg-gold-400" />
-                <span className="font-sans text-gold-600 text-xs tracking-[0.3em] uppercase font-semibold">
+                <span className={`${aboutFont.subtitle} text-gold-600 text-xs tracking-[0.3em] uppercase font-semibold`}>
                   {subtitle}
                 </span>
                 <span className="h-px w-12 bg-gold-400" />
@@ -120,7 +125,7 @@ export default function About() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={inView ? { opacity: 1, y: 0 } : {}}
                 transition={{ delay: 0.3, duration: 0.6 }}
-                className="font-serif text-4xl sm:text-5xl md:text-6xl font-light text-stone-800 leading-tight"
+                className={`${aboutFont.title} text-4xl sm:text-5xl md:text-6xl font-light text-stone-800 leading-tight`}
               >
                 About{' '}
                 <span className="relative inline-block">
@@ -138,7 +143,7 @@ export default function About() {
                 initial={{ opacity: 0 }}
                 animate={inView ? { opacity: 1 } : {}}
                 transition={{ delay: 0.4, duration: 0.5 }}
-                className="font-sans text-stone-400 text-sm mt-4 tracking-wide"
+                className={`${aboutFont.text} text-stone-400 text-sm mt-4 tracking-wide`}
               >
                 {title}
               </motion.p>
@@ -151,11 +156,11 @@ export default function About() {
               />
             </div>
 
-            <p className="font-serif text-stone-600 text-lg leading-relaxed">
+            <p className={`${aboutFont.text} text-stone-600 text-lg leading-relaxed`}>
               {description1}
             </p>
 
-            <p className="font-sans text-stone-500 text-base leading-relaxed">
+            <p className={`${aboutFont.text} text-stone-500 text-base leading-relaxed`}>
               {description2}
             </p>
 
@@ -163,7 +168,7 @@ export default function About() {
               {specialties.map((item) => (
                 <div key={item} className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-gold-500 flex-shrink-0" />
-                  <span className="font-sans text-stone-600 text-sm">{item}</span>
+                  <span className={`${aboutFont.text} text-stone-600 text-sm`}>{item}</span>
                 </div>
               ))}
             </div>
@@ -204,8 +209,8 @@ export default function About() {
                 <div className="w-12 h-12 bg-cream-100 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-gold-50 transition-colors">
                   <Icon size={22} className="text-gold-600" />
                 </div>
-                <div className="font-serif text-3xl text-stone-800 font-light">{stat.value}</div>
-                <div className="font-sans text-stone-400 text-xs tracking-wide uppercase mt-1">{stat.label}</div>
+                <div className={`${aboutFont.title} text-3xl text-stone-800 font-light`}>{stat.value}</div>
+                <div className={`${aboutFont.text} text-stone-400 text-xs tracking-wide uppercase mt-1`}>{stat.label}</div>
               </div>
             );
           })}

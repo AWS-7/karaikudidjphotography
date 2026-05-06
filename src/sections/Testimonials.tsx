@@ -3,12 +3,16 @@ import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { Star, ChevronLeft, ChevronRight, Quote, Loader2 } from 'lucide-react';
 import { testimonials as defaultTestimonials, type Testimonial } from '../data/testimonials';
 import { useSiteSettings } from '../hooks/useSiteSettings';
+import type { FontSettings } from '../types/database';
+import { DEFAULT_FONT_SETTINGS } from '../data/fontSettings';
 
 export default function Testimonials() {
   const ref = useRef<HTMLElement>(null);
   const inView = useInView(ref, { once: true, margin: '-80px' });
   const [current, setCurrent] = useState(0);
   const { data: testimonialsList } = useSiteSettings<Testimonial[]>('testimonials_data', defaultTestimonials);
+  const { data: fontSettings } = useSiteSettings<FontSettings>('font_settings', DEFAULT_FONT_SETTINGS);
+  const testimonialsFont = fontSettings.testimonials || DEFAULT_FONT_SETTINGS.testimonials;
 
   const prev = () => setCurrent((c) => (c - 1 + (testimonialsList?.length || 0)) % (testimonialsList?.length || 1));
   const next = () => setCurrent((c) => (c + 1) % (testimonialsList?.length || 1));
@@ -37,8 +41,8 @@ export default function Testimonials() {
           transition={{ duration: 0.7 }}
           className="text-center mb-16"
         >
-          <span className="font-script text-gold-400 text-2xl mb-2 block">Testimonials</span>
-          <h2 className="font-serif text-4xl md:text-5xl font-light text-white leading-tight">
+          <span className={`${testimonialsFont.subtitle} text-gold-400 text-2xl mb-2 block`}>Testimonials</span>
+          <h2 className={`${testimonialsFont.title} text-4xl md:text-5xl font-light text-white leading-tight`}>
             What Our <span className="italic text-gold-300">Clients</span> Say
           </h2>
           <span className="block w-16 h-0.5 bg-gradient-to-r from-gold-500 to-gold-300 mx-auto mt-5" />
@@ -69,7 +73,7 @@ export default function Testimonials() {
             </div>
 
             {/* Review */}
-            <p className="font-serif text-white/90 text-xl md:text-2xl leading-relaxed italic mb-8">
+            <p className={`${testimonialsFont.text} text-white/90 text-xl md:text-2xl leading-relaxed italic mb-8`}>
               "{t.review}"
             </p>
 
