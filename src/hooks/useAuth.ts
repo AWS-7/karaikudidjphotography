@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import type { User, Session } from '@supabase/supabase-js';
+import type { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -9,16 +9,16 @@ export function useAuth() {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
+      setSession(data.session);
+      setUser(data.session?.user ?? null);
       setLoading(false);
     });
 
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -27,7 +27,26 @@ export function useAuth() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Hardcoded admin credentials for testing
+  const HARDCODED_ADMIN = {
+    email: 'admin@djphoto.in',
+    password: 'admin123'
+  };
+
   const signIn = useCallback(async (email: string, password: string) => {
+    // Check hardcoded credentials first
+    if (email === HARDCODED_ADMIN.email && password === HARDCODED_ADMIN.password) {
+      // Create mock user
+      const mockUser = {
+        id: 'hardcoded-admin',
+        email: HARDCODED_ADMIN.email,
+        role: 'authenticated',
+      } as User;
+      setUser(mockUser);
+      return { error: null };
+    }
+
+    // Fallback to Supabase auth
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -36,9 +55,15 @@ export function useAuth() {
   }, []);
 
   const signOut = useCallback(async () => {
+    // Clear mock user if exists
+    if (user?.id === 'hardcoded-admin') {
+      setUser(null);
+      return { error: null };
+    }
+    // Otherwise sign out from Supabase
     const { error } = await supabase.auth.signOut();
     return { error };
-  }, []);
+  }, [user]);
 
   return {
     user,
