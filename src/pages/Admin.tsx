@@ -28,9 +28,10 @@ import {
   MessageCircle,
   ArrowRight,
 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { useEvents, createEvent, deleteEvent } from '../hooks/useEvents';
-import { usePackages } from '../hooks/usePackages';
+import { usePackages, updatePackage } from '../hooks/usePackages';
 import { useImageUpload, deleteImage } from '../hooks/useImages';
 import { useToast } from '../contexts/ToastContext';
 import type { Event } from '../types/database';
@@ -890,8 +891,49 @@ function UploadTab({ dragOver, setDragOver }: { dragOver: boolean; setDragOver: 
 
 /* ─────────────── Packages Tab ─────────────── */
 function PackagesTab() {
-  const { packages, loading } = usePackages();
+  const { packages, loading, refetch } = usePackages();
+  const { showToast } = useToast();
   const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
+  const [editingPackage, setEditingPackage] = useState<any | null>(null);
+  const [updateLoading, setUpdateLoading] = useState(false);
+
+  const handleEditClick = (pkg: any) => {
+    // Extract numeric price from formatted string (e.g., "₹95,000" -> 95000)
+    const numericPrice = parseInt(pkg.price.replace(/[^0-9]/g, ''));
+    setEditingPackage({
+      ...pkg,
+      price: numericPrice,
+    });
+  };
+
+  const handleUpdatePackage = async () => {
+    if (!editingPackage) return;
+    setUpdateLoading(true);
+    try {
+      await updatePackage(editingPackage.id, {
+        name: editingPackage.name,
+        price: editingPackage.price,
+        price_note: editingPackage.priceNote,
+        badge: editingPackage.badge,
+        popular: editingPackage.popular,
+        features: editingPackage.features,
+      });
+      showToast('success', 'Package updated successfully!');
+      setEditingPackage(null);
+      refetch();
+    } catch (err) {
+      showToast('error', 'Failed to update package');
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
+  const toggleFeature = (index: number) => {
+    if (!editingPackage) return;
+    const newFeatures = [...editingPackage.features];
+    newFeatures[index].included = !newFeatures[index].included;
+    setEditingPackage({ ...editingPackage, features: newFeatures });
+  };
 
   if (loading) {
     return (
@@ -948,7 +990,10 @@ function PackagesTab() {
                 >
                   <Eye size={13} /> View Details
                 </button>
-                <button className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-stone-50 hover:bg-stone-100 text-stone-600 text-xs font-sans transition-colors">
+                <button 
+                  onClick={() => handleEditClick(pkg)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-stone-50 hover:bg-stone-100 text-stone-600 text-xs font-sans transition-colors"
+                >
                   <Pencil size={13} /> Edit
                 </button>
                 <button className="p-2 rounded-lg bg-stone-50 hover:bg-stone-100 text-stone-500 transition-colors">
@@ -959,6 +1004,106 @@ function PackagesTab() {
           </div>
         ))}
       </div>
+
+      {/* Edit Package Modal */}
+      <AnimatePresence>
+        {editingPackage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
+            >
+              <div className="p-6 border-b border-stone-100 flex items-center justify-between">
+                <h2 className="font-serif text-2xl text-stone-800">Edit {editingPackage.name} Package</h2>
+                <button onClick={() => setEditingPackage(null)} className="p-2 hover:bg-stone-100 rounded-full transition-colors">
+                  <X size={20} className="text-stone-400" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="font-sans text-xs text-stone-400 uppercase tracking-widest mb-1.5 block">Package Name</label>
+                    <input
+                      type="text"
+                      value={editingPackage.name}
+                      onChange={(e) => setEditingPackage({ ...editingPackage, name: e.target.value })}
+                      className="w-full border border-stone-200 rounded-lg px-4 py-2.5 font-sans text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-sans text-xs text-stone-400 uppercase tracking-widest mb-1.5 block">Price (₹)</label>
+                    <input
+                      type="number"
+                      value={editingPackage.price}
+                      onChange={(e) => setEditingPackage({ ...editingPackage, price: parseInt(e.target.value) })}
+                      className="w-full border border-stone-200 rounded-lg px-4 py-2.5 font-sans text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-sans text-xs text-stone-400 uppercase tracking-widest mb-1.5 block">Price Note</label>
+                  <input
+                    type="text"
+                    value={editingPackage.priceNote}
+                    onChange={(e) => setEditingPackage({ ...editingPackage, priceNote: e.target.value })}
+                    className="w-full border border-stone-200 rounded-lg px-4 py-2.5 font-sans text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-sans text-xs text-stone-400 uppercase tracking-widest mb-3 block">Included Features</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {editingPackage.features.map((feature: any, idx: number) => (
+                      <button
+                        key={idx}
+                        onClick={() => toggleFeature(idx)}
+                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
+                          feature.included 
+                            ? 'border-gold-200 bg-gold-50 text-gold-700' 
+                            : 'border-stone-100 bg-stone-50 text-stone-400'
+                        }`}
+                      >
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          feature.included ? 'bg-gold-500 text-white' : 'bg-stone-200 text-stone-400'
+                        }`}>
+                          {feature.included ? <Check size={12} strokeWidth={3} /> : <X size={12} strokeWidth={3} />}
+                        </div>
+                        <span className="font-sans text-xs font-medium">{feature.text}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 bg-stone-50 border-t border-stone-100 flex gap-3">
+                <button
+                  onClick={() => setEditingPackage(null)}
+                  className="flex-1 py-3 rounded-xl font-sans text-sm font-semibold text-stone-500 hover:bg-stone-100 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUpdatePackage}
+                  disabled={updateLoading}
+                  className="flex-[2] py-3 rounded-xl font-sans text-sm font-semibold bg-gold-500 text-white hover:bg-gold-600 transition-all shadow-lg shadow-gold-500/20 flex items-center justify-center gap-2"
+                >
+                  {updateLoading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                  Save Changes
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Preview Modal (Same as User Side) */}
       <AnimatePresence>
