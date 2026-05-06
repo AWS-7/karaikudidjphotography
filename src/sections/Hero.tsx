@@ -1,12 +1,12 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, MessageCircle, Images, Loader2 } from 'lucide-react';
+import { ChevronDown, MessageCircle, Images } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import type { HeroData } from '../types/database';
 
 const DEFAULT_HERO: HeroData = {
   subtitle: 'DJ Photography',
-  title: 'Capturing Love, Light & Emotion',
+  title: 'Capturing Love & Emotion',
   tagline: 'Professional Wedding Photographer & Cinematographer',
   stat1Value: '8+',
   stat1Label: 'Years Experience',
@@ -41,8 +41,6 @@ export default function Hero() {
   const scrollToGallery = () => {
     document.getElementById('gallery')?.scrollIntoView({ behavior: 'smooth' });
   };
-
-  const titleParts = (heroData.title || DEFAULT_HERO.title).split('Light');
 
   return (
     <section className="relative w-full h-[85vh] sm:h-screen min-h-[500px] sm:min-h-[600px] overflow-hidden bg-stone-900">
@@ -98,9 +96,7 @@ export default function Hero() {
           transition={{ delay: 0.5, duration: 0.9 }}
           className="font-serif text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-light text-white text-shadow max-w-5xl leading-none mb-3 sm:mb-6 px-2 sm:px-0"
         >
-          {titleParts[0]}
-          <span className="italic text-gold-300">Light</span>
-          {titleParts[1]}
+          {heroData.title}
         </motion.h1>
 
         <motion.p
