@@ -160,14 +160,18 @@ export async function createEvent(eventData: {
   event_name: string;
   slug: string;
   category: string;
-  event_date: string;
-  location: string;
+  event_date?: string;
+  location?: string;
   description?: string;
   cover_image?: string;
 }) {
   const { data, error } = await supabase
     .from('events')
-    .insert(eventData)
+    .insert({
+      ...eventData,
+      event_date: eventData.event_date ?? '',
+      location: eventData.location ?? '',
+    })
     .select()
     .single();
 

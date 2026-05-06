@@ -573,10 +573,8 @@ function AddEventTab() {
   const [formData, setFormData] = useState({
     event_name: '',
     category: 'Wedding Photography',
-    event_date: '',
     description: '',
     cover_image: '',
-    location: '',
   });
 
   const generateSlug = (name: string) => {
@@ -633,15 +631,15 @@ function AddEventTab() {
       await createEvent({
         ...formData,
         slug: generateSlug(formData.event_name),
+        event_date: '',
+        location: '',
       });
       showToast('success', 'Event created successfully!');
       setFormData({
         event_name: '',
         category: services[0]?.title || 'Wedding Photography',
-        event_date: '',
         description: '',
         cover_image: '',
-        location: '',
       });
     } catch (err) {
       showToast('error', 'Failed to create event');
@@ -682,30 +680,6 @@ function AddEventTab() {
               ))}
               <option value="Event">Other Event</option>
             </select>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <div>
-            <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Event Date *</label>
-            <input
-              type="date"
-              value={formData.event_date}
-              onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
-              className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors"
-              required
-            />
-          </div>
-          <div>
-            <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Location *</label>
-            <input
-              type="text"
-              value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              placeholder="e.g. Karaikudi"
-              className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 placeholder-stone-300 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors"
-              required
-            />
           </div>
         </div>
 
