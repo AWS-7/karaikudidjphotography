@@ -160,8 +160,8 @@ export async function createEvent(eventData: {
   event_name: string;
   slug: string;
   category: string;
-  event_date?: string;
-  location?: string;
+  event_date: string;
+  location: string;
   description?: string;
   cover_image?: string;
 }) {
