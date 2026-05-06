@@ -180,7 +180,7 @@ export interface Database {
 }
 
 export interface SiteSettings {
-  key: 'hero_data' | 'about_data' | 'testimonials_data' | 'services_data';
+  key: 'hero_data' | 'about_data' | 'testimonials_data' | 'services_data' | 'categories_data';
   value: any;
 }
 

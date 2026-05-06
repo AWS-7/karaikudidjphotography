@@ -42,6 +42,13 @@ CREATE TABLE IF NOT EXISTS packages (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Site settings table
+CREATE TABLE IF NOT EXISTS site_settings (
+  key TEXT PRIMARY KEY,
+  value JSONB NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- =====================================================
 -- 2. ENABLE ROW LEVEL SECURITY
 -- =====================================================
@@ -118,6 +125,28 @@ WITH CHECK (true);
 CREATE POLICY "Packages are deletable by authenticated users" 
 ON packages FOR DELETE 
 TO authenticated 
+USING (true);
+
+-- Site settings policies
+CREATE POLICY "Site settings are viewable by everyone"
+ON site_settings FOR SELECT
+TO anon, authenticated
+USING (true);
+
+CREATE POLICY "Site settings are insertable by authenticated users"
+ON site_settings FOR INSERT
+TO authenticated
+WITH CHECK (true);
+
+CREATE POLICY "Site settings are updatable by authenticated users"
+ON site_settings FOR UPDATE
+TO authenticated
+USING (true)
+WITH CHECK (true);
+
+CREATE POLICY "Site settings are deletable by authenticated users"
+ON site_settings FOR DELETE
+TO authenticated
 USING (true);
 
 -- =====================================================

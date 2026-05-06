@@ -46,7 +46,7 @@ import logo from '../images/1778058672282-removebg-preview.png';
 
 const packageImages = [img1, img2, img3, img4];
 
-type Tab = 'dashboard' | 'gallery' | 'add-event' | 'upload' | 'packages' | 'services' | 'hero' | 'about' | 'reviews' | 'enquiries' | 'calendar' | 'settings';
+type Tab = 'dashboard' | 'gallery' | 'add-event' | 'categories' | 'upload' | 'packages' | 'services' | 'hero' | 'about' | 'reviews' | 'enquiries' | 'calendar' | 'settings';
 
 const navItems: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -54,6 +54,7 @@ const navItems: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'calendar', label: 'Availability', icon: Bell },
   { id: 'gallery', label: 'Manage Gallery', icon: Images },
   { id: 'add-event', label: 'Add Event', icon: PlusCircle },
+  { id: 'categories', label: 'Categories', icon: Star },
   { id: 'upload', label: 'Upload Images', icon: Upload },
   { id: 'services', label: 'Services List', icon: Camera },
   { id: 'packages', label: 'Packages', icon: Package },
@@ -278,6 +279,7 @@ export default function Admin() {
               {activeTab === 'dashboard' && <DashboardTab />}
               {activeTab === 'gallery' && <GalleryTab />}
               {activeTab === 'add-event' && <AddEventTab />}
+              {activeTab === 'categories' && <CategoriesTab />}
               {activeTab === 'upload' && <UploadTab dragOver={dragOver} setDragOver={setDragOver} />}
               {activeTab === 'packages' && <PackagesTab />}
               {activeTab === 'services' && <ServicesTab />}
@@ -742,18 +744,38 @@ const DEFAULT_SERVICES_LIST: Service[] = [
   { id: '9', title: 'Portrait Sessions', description: '', image: '', icon: 'Portraits' },
 ];
 
+const DEFAULT_CATEGORY_LIST = [
+  'Wedding Photography',
+  'Engagement Shoots',
+  'Pre-Wedding & Post-Wedding',
+  'Puberty Ceremony',
+  'Birthday Shoots',
+  'Baby Shoots & Themes',
+  'Modeling Shoots',
+  'Corporate Events',
+  'Portrait Sessions',
+  'Other Event',
+];
+
 function AddEventTab() {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: services } = useSiteSettings<Service[]>('services_data', DEFAULT_SERVICES_LIST);
+  const { data: categories } = useSiteSettings<string[]>('categories_data', DEFAULT_CATEGORY_LIST);
   const [formData, setFormData] = useState({
     event_name: '',
-    category: 'Wedding Photography',
+    category: DEFAULT_CATEGORY_LIST[0],
     description: '',
     cover_image: '',
   });
+
+  useEffect(() => {
+    if (categories.length > 0 && !categories.includes(formData.category)) {
+      setFormData((prev) => ({ ...prev, category: categories[0] }));
+    }
+  }, [categories]);
 
   const generateSlug = (name: string) => {
     return name
@@ -805,7 +827,7 @@ function AddEventTab() {
       showToast('success', 'Event created successfully!');
       setFormData({
         event_name: '',
-        category: services[0]?.title || 'Wedding Photography',
+        category: (categories.length > 0 ? categories[0] : services[0]?.title) || 'Wedding Photography',
         description: '',
         cover_image: '',
       });
@@ -843,10 +865,10 @@ function AddEventTab() {
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors bg-white"
             >
-              {services.map((s) => (
-                <option key={s.id} value={s.title}>{s.title}</option>
+              {(categories.length > 0 ? categories : services.map((s) => s.title)).map((category) => (
+                <option key={category} value={category}>{category}</option>
               ))}
-              <option value="Event">Other Event</option>
+              <option value="Other Event">Other Event</option>
             </select>
           </div>
         </div>
@@ -915,7 +937,7 @@ function AddEventTab() {
             type="button"
             onClick={() => setFormData({
               event_name: '',
-              category: services[0]?.title || 'Wedding Photography',
+              category: (categories.length > 0 ? categories[0] : services[0]?.title) || 'Wedding Photography',
               description: '',
               cover_image: '',
               location: '',
@@ -927,6 +949,108 @@ function AddEventTab() {
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function CategoriesTab() {
+  const { showToast } = useToast();
+  const { data: categories = [], updateSettings, loading } = useSiteSettings<string[]>('categories_data', DEFAULT_CATEGORY_LIST);
+  const [newCategory, setNewCategory] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const handleAddCategory = async () => {
+    const trimmed = newCategory.trim();
+    if (!trimmed) {
+      showToast('error', 'Enter a category name');
+      return;
+    }
+    if (categories.includes(trimmed)) {
+      showToast('error', 'Category already exists');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await updateSettings([...categories, trimmed]);
+      setNewCategory('');
+      showToast('success', 'Category added');
+    } catch (err) {
+      console.error('Add category error:', err);
+      showToast('error', 'Failed to add category');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRemoveCategory = async (category: string) => {
+    if (!confirm(`Remove category "${category}"?`)) return;
+    setSaving(true);
+    try {
+      await updateSettings(categories.filter((item) => item !== category));
+      showToast('success', 'Category removed');
+    } catch (err) {
+      console.error('Remove category error:', err);
+      showToast('error', 'Failed to remove category');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6 max-w-3xl">
+      <div>
+        <h1 className="font-serif text-3xl text-stone-800">Manage Categories</h1>
+        <p className="font-sans text-stone-400 text-sm mt-1">Add or remove event categories for the Add Event form.</p>
+      </div>
+
+      <div className="bg-white rounded-xl border border-stone-200 shadow-sm p-6 space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">New Category</label>
+            <input
+              type="text"
+              value={newCategory}
+              onChange={(e) => setNewCategory(e.target.value)}
+              className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors"
+              placeholder="e.g. Cinematic Wedding"
+            />
+          </div>
+          <div className="flex items-end justify-end">
+            <button
+              type="button"
+              onClick={handleAddCategory}
+              disabled={saving}
+              className="w-full sm:w-auto bg-gold-600 text-white rounded-lg px-5 py-3 text-sm font-sans hover:bg-gold-700 transition-colors disabled:opacity-50"
+            >
+              {saving ? 'Saving...' : 'Add Category'}
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="font-sans text-sm text-stone-500 uppercase tracking-[0.2em] mb-4">Current categories</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {categories.length > 0 ? (
+              categories.map((category) => (
+                <div key={category} className="flex items-center justify-between gap-3 rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+                  <span className="font-sans text-sm text-stone-700">{category}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveCategory(category)}
+                    disabled={saving}
+                    className="text-red-500 hover:text-red-600 text-sm"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))
+            ) : (
+              <p className="font-sans text-sm text-stone-500">No categories configured yet.</p>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
