@@ -23,7 +23,7 @@ export function useEvents() {
 
       // Fetch image counts for each event
       const eventsWithImages = await Promise.all(
-        (eventsData || []).map(async (event: { id: string; slug: string; event_name: string; category: string; event_date: string; location: string; cover_image?: string }) => {
+        (eventsData || []).map(async (event: any) => {
           const { data: imagesData, error: imagesError } = await supabase
             .from('gallery_images')
             .select('id, image_url, alt_text')
@@ -31,7 +31,7 @@ export function useEvents() {
 
           if (imagesError) throw imagesError;
 
-          const images: GalleryImage[] = (imagesData || []).map((img: { id: string; image_url: string; alt_text?: string }) => ({
+          const images: GalleryImage[] = (imagesData || []).map((img: any) => ({
             id: img.id,
             src: img.image_url,
             alt: img.alt_text || 'Gallery image',
@@ -103,7 +103,7 @@ export function useEvent(slug: string | undefined) {
 
         if (imagesError) throw imagesError;
 
-        const images: GalleryImage[] = (imagesData || []).map((img: { id: string; image_url: string; alt_text?: string }) => ({
+        const images: GalleryImage[] = (imagesData || []).map((img: any) => ({
           id: img.id,
           src: img.image_url,
           alt: img.alt_text || 'Gallery image',
@@ -180,20 +180,47 @@ export async function updateEvent(
 
 // Delete event (admin only)
 export async function deleteEvent(id: string) {
-  // First delete all associated images from storage
-  const { data: images } = await supabase
-    .from('gallery_images')
-    .select('storage_path')
-    .eq('event_id', id);
+  try {
+    // First delete all associated images from storage
+    const { data: images, error: fetchError } = await supabase
+      .from('gallery_images')
+      .select('storage_path')
+      .eq('event_id', id);
 
-  if (images && images.length > 0) {
-    const paths = images.map((img: { storage_path: string }) => img.storage_path);
-    await supabase.storage.from('gallery').remove(paths);
+    if (fetchError) throw fetchError;
+
+    if (images && images.length > 0) {
+      const paths = images
+        .map((img: any) => img.storage_path)
+        .filter((path): path is string => !!path);
+      
+      if (paths.length > 0) {
+        const { error: storageError } = await supabase.storage.from('gallery').remove(paths);
+        if (storageError) {
+          console.warn('Storage removal warning:', storageError);
+          // Continue anyway to delete from DB
+        }
+      }
+    }
+
+    // Then delete the event (images in DB will be deleted via cascade if configured, 
+    // but let's delete them manually to be sure)
+    const { error: imagesDbError } = await supabase
+      .from('gallery_images')
+      .delete()
+      .eq('event_id', id);
+    
+    if (imagesDbError) throw imagesDbError;
+
+    const { error: eventError } = await supabase
+      .from('events')
+      .delete()
+      .eq('id', id);
+
+    if (eventError) throw eventError;
+    return true;
+  } catch (err) {
+    console.error('Delete event error:', err);
+    throw err;
   }
-
-  // Then delete the event (images will be deleted via cascade)
-  const { error } = await supabase.from('events').delete().eq('id', id);
-
-  if (error) throw error;
-  return true;
 }

@@ -1,17 +1,33 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { Star, ChevronLeft, ChevronRight, Quote } from 'lucide-react';
-import { testimonials } from '../data/testimonials';
+import { testimonials as defaultTestimonials, type Testimonial } from '../data/testimonials';
+
+function loadTestimonials(): Testimonial[] {
+  try {
+    const stored = localStorage.getItem('dj_testimonials');
+    if (stored) return JSON.parse(stored);
+  } catch { /* ignore */ }
+  return defaultTestimonials;
+}
 
 export default function Testimonials() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '-80px' });
   const [current, setCurrent] = useState(0);
+  const [testimonialsList, setTestimonialsList] = useState<Testimonial[]>(loadTestimonials);
 
-  const prev = () => setCurrent((c) => (c - 1 + testimonials.length) % testimonials.length);
-  const next = () => setCurrent((c) => (c + 1) % testimonials.length);
+  // Re-load from localStorage on mount and when window gets focus
+  useEffect(() => {
+    const handleFocus = () => setTestimonialsList(loadTestimonials());
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
 
-  const t = testimonials[current];
+  const prev = () => setCurrent((c) => (c - 1 + testimonialsList.length) % testimonialsList.length);
+  const next = () => setCurrent((c) => (c + 1) % testimonialsList.length);
+
+  const t = testimonialsList[current];
 
   return (
     <section className="py-24 bg-stone-900 relative overflow-hidden" ref={ref}>
@@ -96,7 +112,7 @@ export default function Testimonials() {
             <ChevronLeft size={20} />
           </button>
           <div className="flex gap-2">
-            {testimonials.map((_, i) => (
+            {testimonialsList.map((_: Testimonial, i: number) => (
               <button
                 key={i}
                 onClick={() => setCurrent(i)}

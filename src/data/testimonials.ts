@@ -9,7 +9,7 @@ export interface Testimonial {
   event: string;
 }
 
-export const testimonials: Testimonial[] = [
+const DEFAULT_TESTIMONIALS: Testimonial[] = [
   {
     id: '1',
     name: 'Karthik & Meena',
@@ -41,3 +41,19 @@ export const testimonials: Testimonial[] = [
     event: 'Wedding & Cinematography',
   },
 ];
+
+// Load from localStorage or use defaults
+export function loadTestimonials(): Testimonial[] {
+  try {
+    const stored = localStorage.getItem('dj_testimonials');
+    if (stored) return JSON.parse(stored);
+  } catch { /* ignore */ }
+  return DEFAULT_TESTIMONIALS;
+}
+
+// Save to localStorage
+export function saveTestimonials(data: Testimonial[]) {
+  localStorage.setItem('dj_testimonials', JSON.stringify(data));
+}
+
+export const testimonials: Testimonial[] = loadTestimonials();

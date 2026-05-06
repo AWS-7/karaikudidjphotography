@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
-import { Check, ArrowRight, X } from 'lucide-react';
+import { Eye, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { packages } from '../data/packages';
 import img1 from '../images/1778054327731.jpg';
 import img2 from '../images/1778054327722.jpg';
@@ -13,7 +14,7 @@ const packageImages = [img1, img2, img3, img4];
 export default function Services() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '-80px' });
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const navigate = useNavigate();
 
   return (
     <section id="services" className="py-20 sm:py-28 bg-stone-50 relative overflow-hidden" ref={ref}>
@@ -81,8 +82,6 @@ export default function Services() {
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.6, delay: i * 0.12 }}
               className="relative group"
-              onMouseEnter={() => setHoveredIndex(i)}
-              onMouseLeave={() => setHoveredIndex(null)}
             >
               <div className={`relative rounded-2xl overflow-hidden shadow-xl transition-all duration-500 ${
                 pkg.popular ? 'lg:-translate-y-3 shadow-2xl' : 'hover:-translate-y-2 hover:shadow-2xl'
@@ -94,10 +93,10 @@ export default function Services() {
                     alt={`${pkg.name} Package`}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
-                  
+
                   {/* Gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                  
+
                   {/* Popular badge */}
                   {pkg.popular && (
                     <div className="absolute top-4 left-4 bg-gold-500 text-white px-4 py-1.5 rounded-full text-xs font-sans font-semibold tracking-widest uppercase shadow-lg z-10">
@@ -105,13 +104,9 @@ export default function Services() {
                     </div>
                   )}
 
-                  {/* Content overlay */}
+                  {/* Content overlay - name + price only */}
                   <div className="absolute inset-0 flex flex-col justify-end p-6 sm:p-8">
-                    {/* Package name & price - always visible */}
-                    <div className="transform transition-transform duration-500 group-hover:-translate-y-2">
-                      <p className="font-sans text-white/60 text-xs tracking-[0.2em] uppercase mb-1">
-                        Package
-                      </p>
+                    <div>
                       <h3 className="font-serif text-3xl sm:text-4xl font-light text-white mb-2">
                         {pkg.name}
                       </h3>
@@ -123,41 +118,19 @@ export default function Services() {
                       </div>
                     </div>
 
-                    {/* Features - show on hover */}
-                    <div className={`overflow-hidden transition-all duration-500 ${
-                      hoveredIndex === i ? 'max-h-96 opacity-100 mt-4' : 'max-h-0 opacity-0 mt-0'
-                    }`}>
-                      <div className="h-px bg-white/20 mb-4" />
-                      <ul className="space-y-2.5">
-                        {pkg.features.slice(0, 6).map((feature) => (
-                          <li key={feature.text} className={`flex items-center gap-2 ${!feature.included ? 'opacity-40' : ''}`}>
-                            {feature.included ? (
-                              <Check size={12} className="text-gold-400 flex-shrink-0" strokeWidth={3} />
-                            ) : (
-                              <X size={12} className="text-white/30 flex-shrink-0" strokeWidth={3} />
-                            )}
-                            <span className={`font-sans text-xs ${feature.included ? 'text-white/90' : 'text-white/40'}`}>
-                              {feature.text}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* CTA Button */}
-                    <a
-                      href={`https://wa.me/918825605403?text=Hi%20Dass!%20I'm%20interested%20in%20the%20${pkg.name}%20package%20(${pkg.price}).`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`mt-5 inline-flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-sans text-sm font-semibold tracking-wider uppercase transition-all duration-300 ${
+                    {/* View Button */}
+                    <button
+                      onClick={() => navigate(`/package/${pkg.id}`)}
+                      className={`mt-5 inline-flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-sans text-sm font-semibold tracking-wider uppercase transition-all duration-300 cursor-pointer ${
                         pkg.popular
                           ? 'bg-gold-500 text-white hover:bg-gold-400 shadow-lg shadow-gold-500/25'
                           : 'bg-white/10 text-white backdrop-blur-sm border border-white/20 hover:bg-white hover:text-stone-900'
                       }`}
                     >
-                      Book {pkg.name}
+                      <Eye size={14} />
+                      View Details
                       <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                    </a>
+                    </button>
                   </div>
                 </div>
               </div>

@@ -24,14 +24,23 @@ import {
   ImageIcon,
   Home,
   MessageSquare,
+  XCircle,
+  MessageCircle,
+  ArrowRight,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useEvents, createEvent, deleteEvent } from '../hooks/useEvents';
 import { usePackages } from '../hooks/usePackages';
-import { useImageUpload } from '../hooks/useImages';
+import { useImageUpload, deleteImage } from '../hooks/useImages';
 import { useToast } from '../contexts/ToastContext';
 import type { Event } from '../types/database';
-import { testimonials as testimonialsData } from '../data/testimonials';
+import { testimonials as testimonialsData, saveTestimonials, loadTestimonials } from '../data/testimonials';
+import img1 from '../images/1778054327731.jpg';
+import img2 from '../images/1778054327722.jpg';
+import img3 from '../images/1778054327710.jpg';
+import img4 from '../images/1778054327688.jpg';
+
+const packageImages = [img1, img2, img3, img4];
 
 // Testimonial type for reviews management
 interface Testimonial {
@@ -371,6 +380,7 @@ function GalleryTab() {
   const { events, loading, refetch } = useEvents();
   const { showToast } = useToast();
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  const [selectedEventImages, setSelectedEventImages] = useState<Event | null>(null);
 
   const handleDelete = async (event: Event) => {
     if (!confirm(`Are you sure you want to delete "${event.name}"? This will also delete all ${event.images.length} photos.`)) {
@@ -386,6 +396,35 @@ function GalleryTab() {
       showToast('error', 'Failed to delete event');
     } finally {
       setDeleteLoading(null);
+    }
+  };
+
+  const handleDeleteImage = async (imageId: string, src: string) => {
+    if (!confirm('Delete this image?')) return;
+    
+    // Extract storage path from URL if possible, or use a heuristic
+    // Our storage path is usually 'event-slug/filename'
+    // The URL is like '.../gallery/event-slug/filename'
+    const urlParts = src.split('/gallery/');
+    if (urlParts.length < 2) {
+      showToast('error', 'Could not determine storage path');
+      return;
+    }
+    const storagePath = urlParts[1];
+
+    try {
+      await deleteImage(imageId, storagePath);
+      showToast('success', 'Image deleted');
+      // Refresh local state
+      if (selectedEventImages) {
+        setSelectedEventImages({
+          ...selectedEventImages,
+          images: selectedEventImages.images.filter(img => img.id !== imageId)
+        });
+      }
+      refetch();
+    } catch (err) {
+      showToast('error', 'Failed to delete image');
     }
   };
 
@@ -431,14 +470,12 @@ function GalleryTab() {
                 <p className="font-sans text-xs text-stone-400 mt-0.5">{event.date} · {event.location}</p>
                 <p className="font-sans text-xs text-stone-500 mt-1">{event.images.length} photos</p>
                 <div className="flex gap-2 mt-3">
-                  <a
-                    href={`/gallery/${event.slug}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-stone-50 hover:bg-stone-100 text-stone-600 text-xs font-sans transition-colors"
+                  <button
+                    onClick={() => setSelectedEventImages(event)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-gold-50 hover:bg-gold-100 text-gold-700 text-xs font-sans transition-colors"
                   >
-                    <Eye size={13} /> View
-                  </a>
+                    <Images size={13} /> Manage Photos
+                  </button>
                   <button
                     onClick={() => handleDelete(event)}
                     disabled={deleteLoading === event.id}
@@ -456,6 +493,67 @@ function GalleryTab() {
           ))}
         </div>
       )}
+
+      {/* Manage Images Modal */}
+      <AnimatePresence>
+        {selectedEventImages && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            onClick={() => setSelectedEventImages(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-stone-100 flex items-center justify-between">
+                <div>
+                  <h2 className="font-serif text-2xl text-stone-800">{selectedEventImages.name}</h2>
+                  <p className="font-sans text-stone-400 text-sm">Manage {selectedEventImages.images.length} photos</p>
+                </div>
+                <button
+                  onClick={() => setSelectedEventImages(null)}
+                  className="p-2 hover:bg-stone-100 rounded-full transition-colors"
+                >
+                  <X size={24} className="text-stone-400" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {selectedEventImages.images.map((img) => (
+                    <div key={img.id} className="relative group aspect-square rounded-lg overflow-hidden border border-stone-100 shadow-sm">
+                      <img src={img.src} alt="" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <button
+                          onClick={() => handleDeleteImage(img.id, img.src)}
+                          className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors transform scale-90 group-hover:scale-100 duration-200"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="p-4 bg-stone-50 border-t border-stone-100 text-right">
+                <button
+                  onClick={() => setSelectedEventImages(null)}
+                  className="px-6 py-2 bg-white border border-stone-200 rounded-lg font-sans text-sm text-stone-600 hover:bg-stone-100 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -793,6 +891,7 @@ function UploadTab({ dragOver, setDragOver }: { dragOver: boolean; setDragOver: 
 /* ─────────────── Packages Tab ─────────────── */
 function PackagesTab() {
   const { packages, loading } = usePackages();
+  const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
 
   if (loading) {
     return (
@@ -812,51 +911,152 @@ function PackagesTab() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {packages.map((pkg) => (
-          <div key={pkg.id} className="bg-white rounded-xl border border-stone-200 shadow-sm p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="font-serif text-xl text-stone-800">{pkg.name}</h3>
-                <p className="font-sans text-xs text-stone-400 tracking-widest uppercase mt-0.5">{pkg.priceNote}</p>
+        {packages.map((pkg, i) => (
+          <div key={pkg.id} className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+            <div className="relative h-32 overflow-hidden">
+              <img src={packageImages[i]} alt={pkg.name} className="w-full h-full object-cover object-center" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              <div className="absolute bottom-3 left-4">
+                <h3 className="font-serif text-xl text-white">{pkg.name}</h3>
+                <p className="font-sans text-[10px] text-white/70 tracking-widest uppercase">{pkg.priceNote}</p>
               </div>
-              <div className="text-right">
-                <p className="font-serif text-2xl text-gold-600 font-medium">{pkg.price}</p>
-                {pkg.badge && (
-                  <span className="text-xs bg-gold-50 text-gold-700 px-2 py-0.5 rounded-full font-sans">{pkg.badge}</span>
+              <div className="absolute top-3 right-4">
+                <p className="font-serif text-xl text-gold-300 font-medium">{pkg.price}</p>
+              </div>
+            </div>
+            
+            <div className="p-5">
+              <div className="space-y-1.5 mb-5">
+                {pkg.features.slice(0, 3).map((f) => (
+                  <div key={f.text} className="flex items-center gap-2">
+                    {f.included ? (
+                      <Check size={13} className="text-green-500 flex-shrink-0" />
+                    ) : (
+                      <X size={13} className="text-stone-300 flex-shrink-0" />
+                    )}
+                    <span className={`font-sans text-xs ${f.included ? 'text-stone-600' : 'text-stone-300'}`}>{f.text}</span>
+                  </div>
+                ))}
+                {pkg.features.length > 3 && (
+                  <p className="font-sans text-[10px] text-stone-400 italic">+{pkg.features.length - 3} more services...</p>
                 )}
               </div>
-            </div>
-            <div className="space-y-1.5 mb-5">
-              {pkg.features.slice(0, 5).map((f) => (
-                <div key={f.text} className="flex items-center gap-2">
-                  {f.included ? (
-                    <Check size={13} className="text-green-500 flex-shrink-0" />
-                  ) : (
-                    <X size={13} className="text-stone-300 flex-shrink-0" />
-                  )}
-                  <span className={`font-sans text-xs ${f.included ? 'text-stone-600' : 'text-stone-300'}`}>{f.text}</span>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <button className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-gold-50 hover:bg-gold-100 text-gold-700 text-xs font-sans transition-colors">
-                <Pencil size={13} /> Edit Package
-              </button>
-              <button className="p-2 rounded-lg bg-stone-50 hover:bg-stone-100 text-stone-500 transition-colors">
-                <MoreHorizontal size={15} />
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setSelectedPackage(i)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-gold-50 hover:bg-gold-100 text-gold-700 text-xs font-sans transition-colors"
+                >
+                  <Eye size={13} /> View Details
+                </button>
+                <button className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-stone-50 hover:bg-stone-100 text-stone-600 text-xs font-sans transition-colors">
+                  <Pencil size={13} /> Edit
+                </button>
+                <button className="p-2 rounded-lg bg-stone-50 hover:bg-stone-100 text-stone-500 transition-colors">
+                  <MoreHorizontal size={15} />
+                </button>
+              </div>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Preview Modal (Same as User Side) */}
+      <AnimatePresence>
+        {selectedPackage !== null && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            onClick={() => setSelectedPackage(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="relative bg-white rounded-3xl overflow-hidden shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close button */}
+              <button
+                onClick={() => setSelectedPackage(null)}
+                className="absolute top-4 right-4 z-10 w-10 h-10 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-colors"
+              >
+                <XCircle size={20} />
+              </button>
+
+              {/* Package Image */}
+              <div className="relative h-48 sm:h-56">
+                <img
+                  src={packageImages[selectedPackage]}
+                  alt={packages[selectedPackage].name}
+                  className="w-full h-full object-cover object-center"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6">
+                  <h3 className="font-serif text-3xl sm:text-4xl font-light text-white">
+                    {packages[selectedPackage].name}
+                  </h3>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className="font-serif text-xl sm:text-2xl text-gold-300">
+                      {packages[selectedPackage].price}
+                    </span>
+                    <span className="font-sans text-white/60 text-xs">
+                      {packages[selectedPackage].priceNote}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Services List */}
+              <div className="p-5 sm:p-6">
+                <h4 className="font-serif text-lg text-stone-800 mb-4 flex items-center gap-2">
+                  <Check size={18} className="text-gold-500" />
+                  Package Services
+                </h4>
+                <ul className="space-y-2">
+                  {packages[selectedPackage].features.map((feature) => (
+                    <li key={feature.text} className={`flex items-start gap-3 ${!feature.included ? 'opacity-40' : ''}`}>
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                        feature.included ? 'bg-gold-100' : 'bg-stone-100'
+                      }`}>
+                        {feature.included ? (
+                          <Check size={10} className="text-gold-600" strokeWidth={3} />
+                        ) : (
+                          <X size={10} className="text-stone-300" strokeWidth={3} />
+                        )}
+                      </div>
+                      <span className={`font-sans text-sm ${feature.included ? 'text-stone-700' : 'text-stone-400'}`}>
+                        {feature.text}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Preview Info (instead of Book Now in Admin) */}
+                <div className="mt-6 w-full flex items-center justify-center gap-3 py-3.5 rounded-xl font-sans text-base font-semibold tracking-wider uppercase bg-stone-100 text-stone-500 border border-stone-200">
+                  <Eye size={18} />
+                  User Preview Mode
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
 /* ─────────────── Hero Tab ─────────────── */
-function HeroTab() {
-  const { showToast } = useToast();
-  const [heroData, setHeroData] = useState({
+const HERO_STORAGE_KEY = 'dj_hero_data';
+
+function loadHeroData() {
+  try {
+    const stored = localStorage.getItem(HERO_STORAGE_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch { /* ignore */ }
+  return {
     subtitle: 'DJ Photography',
     title: 'Capturing Love, Light & Emotion',
     tagline: 'Professional Wedding Photographer & Cinematographer',
@@ -867,10 +1067,54 @@ function HeroTab() {
     stat3Value: '100%',
     stat3Label: 'Happy Clients',
     bgImage: 'https://images.pexels.com/photos/1456613/pexels-photo-1456613.jpeg?auto=compress&cs=tinysrgb&w=1920',
-  });
+  };
+}
+
+function HeroTab() {
+  const { showToast } = useToast();
+  const [heroData, setHeroData] = useState(loadHeroData);
+  const [uploadingHero, setUploadingHero] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = () => {
+    localStorage.setItem(HERO_STORAGE_KEY, JSON.stringify(heroData));
     showToast('success', 'Hero section updated successfully!');
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast('error', 'Please select an image file');
+      return;
+    }
+
+    setUploadingHero(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `hero_bg_${Date.now()}.${fileExt}`;
+      const storagePath = `hero/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('gallery')
+        .upload(storagePath, file, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from('gallery').getPublicUrl(storagePath);
+      const imageUrl = urlData.publicUrl;
+
+      setHeroData({ ...heroData, bgImage: imageUrl });
+      showToast('success', 'Hero image uploaded to storage!');
+    } catch (err) {
+      console.error('Hero upload error:', err);
+      showToast('error', 'Failed to upload image to storage');
+    } finally {
+      setUploadingHero(false);
+    }
   };
 
   return (
@@ -895,14 +1139,38 @@ function HeroTab() {
       <div className="bg-white rounded-xl border border-stone-200 shadow-sm p-8 space-y-5">
         <h3 className="font-serif text-lg text-stone-800 border-b border-stone-100 pb-3">Hero Content</h3>
 
+        {/* Image Upload */}
         <div>
-          <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Background Image URL</label>
-          <input
-            type="url"
-            value={heroData.bgImage}
-            onChange={(e) => setHeroData({ ...heroData, bgImage: e.target.value })}
-            className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors"
-          />
+          <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Background Image</label>
+          <div className="flex gap-3">
+            <input
+              type="url"
+              value={heroData.bgImage.startsWith('data:') ? '' : heroData.bgImage}
+              onChange={(e) => setHeroData({ ...heroData, bgImage: e.target.value })}
+              placeholder="https://... or upload below"
+              className="flex-1 border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors"
+            />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingHero}
+              className="flex items-center gap-2 px-4 py-3 bg-stone-100 hover:bg-stone-200 rounded-lg text-stone-600 text-sm font-sans transition-colors disabled:opacity-50"
+            >
+              {uploadingHero ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+              Upload
+            </button>
+          </div>
+          {heroData.bgImage.startsWith('data:') && (
+            <p className="font-sans text-xs text-green-600 mt-2 flex items-center gap-1">
+              <Check size={12} /> Image uploaded from device
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -975,8 +1243,8 @@ function HeroTab() {
 /* ─────────────── Reviews Tab ─────────────── */
 function ReviewsTab() {
   const { showToast } = useToast();
-  const [reviews, setReviews] = useState<Testimonial[]>(testimonialsData);
-  const [editingId] = useState<string | null>(null);
+  const [reviews, setReviews] = useState<Testimonial[]>(loadTestimonials());
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Testimonial>>({
     name: '',
     role: '',
@@ -1002,14 +1270,34 @@ function ReviewsTab() {
       rating: formData.rating || 5,
       event: formData.event || '',
     };
-    setReviews([...reviews, newReview]);
+    const updated = [...reviews, newReview];
+    setReviews(updated);
+    saveTestimonials(updated);
     setFormData({ name: '', role: '', location: '', avatar: '', review: '', rating: 5, event: '' });
     showToast('success', 'Review added successfully!');
   };
 
+  const handleEdit = (review: Testimonial) => {
+    setEditingId(review.id);
+    setFormData(review);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleUpdate = () => {
+    if (!editingId) return;
+    const updated = reviews.map(r => r.id === editingId ? { ...r, ...formData } as Testimonial : r);
+    setReviews(updated);
+    saveTestimonials(updated);
+    setEditingId(null);
+    setFormData({ name: '', role: '', location: '', avatar: '', review: '', rating: 5, event: '' });
+    showToast('success', 'Review updated successfully!');
+  };
+
   const handleDelete = (id: string) => {
     if (!confirm('Delete this review?')) return;
-    setReviews(reviews.filter((r) => r.id !== id));
+    const updated = reviews.filter((r) => r.id !== id);
+    setReviews(updated);
+    saveTestimonials(updated);
     showToast('success', 'Review deleted');
   };
 
@@ -1096,20 +1384,33 @@ function ReviewsTab() {
           />
         </div>
 
-        <button
-          onClick={handleAdd}
-          className="btn-gold text-xs flex items-center gap-2"
-        >
-          <PlusCircle size={14} />
-          Add Review
-        </button>
+        <div className="flex gap-3 pt-2">
+          <button
+            onClick={editingId ? handleUpdate : handleAdd}
+            className="btn-gold text-xs px-8 py-3 flex items-center gap-2"
+          >
+            {editingId ? <Check size={15} /> : <PlusCircle size={15} />}
+            {editingId ? 'Update Review' : 'Add Review'}
+          </button>
+          {editingId && (
+            <button
+              onClick={() => {
+                setEditingId(null);
+                setFormData({ name: '', role: '', location: '', avatar: '', review: '', rating: 5, event: '' });
+              }}
+              className="btn-outline-gold text-xs px-6 py-3"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Reviews List */}
       <div className="space-y-4">
         <h3 className="font-serif text-lg text-stone-800">All Reviews ({reviews.length})</h3>
         {reviews.map((review) => (
-          <div key={review.id} className="bg-white rounded-xl border border-stone-200 shadow-sm p-6 flex gap-4">
+          <div key={review.id} className="bg-white rounded-xl border border-stone-200 shadow-sm p-6 flex gap-4 group">
             <img src={review.avatar} alt={review.name} className="w-14 h-14 rounded-full object-cover border-2 border-gold-200 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
@@ -1122,12 +1423,22 @@ function ReviewsTab() {
                     ))}
                   </div>
                 </div>
-                <button
-                  onClick={() => handleDelete(review.id)}
-                  className="p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  <Trash2 size={14} />
-                </button>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => handleEdit(review)}
+                    className="p-2 text-stone-400 hover:text-gold-600 hover:bg-gold-50 rounded-lg transition-colors"
+                    title="Edit Review"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(review.id)}
+                    className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Delete Review"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </div>
               <p className="font-sans text-sm text-stone-600 mt-2 line-clamp-3">"{review.review}"</p>
             </div>

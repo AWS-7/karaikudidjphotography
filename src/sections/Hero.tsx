@@ -1,17 +1,51 @@
 import { motion } from 'framer-motion';
 import { ChevronDown, MessageCircle, Images } from 'lucide-react';
+import { useState, useEffect } from 'react';
+
+const HERO_STORAGE_KEY = 'dj_hero_data';
+
+const DEFAULT_HERO = {
+  subtitle: 'DJ Photography',
+  title: 'Capturing Love, Light & Emotion',
+  tagline: 'Professional Wedding Photographer & Cinematographer',
+  stat1Value: '8+',
+  stat1Label: 'Years Experience',
+  stat2Value: '1500+',
+  stat2Label: 'Weddings',
+  stat3Value: '100%',
+  stat3Label: 'Happy Clients',
+  bgImage: 'https://images.pexels.com/photos/1456613/pexels-photo-1456613.jpeg?auto=compress&cs=tinysrgb&w=1920',
+};
+
+function loadHeroData() {
+  try {
+    const stored = localStorage.getItem(HERO_STORAGE_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch { /* ignore */ }
+  return DEFAULT_HERO;
+}
 
 export default function Hero() {
+  const [heroData, setHeroData] = useState(loadHeroData());
+
+  useEffect(() => {
+    const handleFocus = () => setHeroData(loadHeroData());
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
+
   const scrollToGallery = () => {
     document.getElementById('gallery')?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  const titleParts = heroData.title.split('Light');
 
   return (
     <section className="relative w-full h-[85vh] sm:h-screen min-h-[500px] sm:min-h-[600px] overflow-hidden">
       {/* Background Image */}
       <div className="absolute inset-0 overflow-hidden">
         <img
-          src="https://images.pexels.com/photos/1456613/pexels-photo-1456613.jpeg?auto=compress&cs=tinysrgb&w=1920"
+          src={heroData.bgImage}
           alt="Wedding photography by DJ Photography Karaikudi"
           className="w-full h-full object-cover object-center"
           style={{
@@ -45,7 +79,7 @@ export default function Hero() {
           transition={{ delay: 0.3, duration: 0.8 }}
           className="font-script text-gold-300 text-2xl sm:text-3xl md:text-4xl mb-2 sm:mb-4 block"
         >
-          DJ Photography
+          {heroData.subtitle}
         </motion.span>
 
         <motion.h1
@@ -54,9 +88,9 @@ export default function Hero() {
           transition={{ delay: 0.5, duration: 0.9 }}
           className="font-serif text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-light text-white text-shadow max-w-5xl leading-none mb-3 sm:mb-6 px-2 sm:px-0"
         >
-          Capturing Love,{' '}
-          <span className="italic text-gold-300">Light</span>{' '}
-          &amp; Emotion
+          {titleParts[0]}
+          <span className="italic text-gold-300">Light</span>
+          {titleParts[1]}
         </motion.h1>
 
         <motion.p
@@ -65,7 +99,7 @@ export default function Hero() {
           transition={{ delay: 0.7, duration: 0.8 }}
           className="font-sans text-cream-200 text-sm sm:text-lg md:text-xl tracking-widest uppercase font-light mb-6 sm:mb-10 text-shadow-sm px-4 sm:px-0"
         >
-          Professional Wedding Photographer &amp; Cinematographer
+          {heroData.tagline}
         </motion.p>
 
         {/* Stats */}
@@ -76,9 +110,9 @@ export default function Hero() {
           className="flex gap-4 sm:gap-8 md:gap-16 mb-6 sm:mb-12"
         >
           {[
-            { value: '8+', label: 'Years Experience' },
-            { value: '1500+', label: 'Weddings' },
-            { value: '100%', label: 'Happy Clients' },
+            { value: heroData.stat1Value, label: heroData.stat1Label },
+            { value: heroData.stat2Value, label: heroData.stat2Label },
+            { value: heroData.stat3Value, label: heroData.stat3Label },
           ].map((stat) => (
             <div key={stat.label} className="text-center">
               <div className="font-serif text-xl sm:text-2xl md:text-3xl text-gold-300 font-light">{stat.value}</div>

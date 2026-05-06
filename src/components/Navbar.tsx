@@ -27,6 +27,7 @@ export default function Navbar() {
   }, [location]);
 
   const isHome = location.pathname === '/';
+  const showSolidNav = scrolled || !isHome;
 
   const handleNavClick = (to: string) => {
     if (to.startsWith('/#') && isHome) {
@@ -42,7 +43,7 @@ export default function Navbar() {
         animate={{ y: 0 }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          scrolled
+          showSolidNav
             ? 'bg-white/95 backdrop-blur-md shadow-md border-b border-cream-200'
             : 'bg-transparent'
         }`}
@@ -55,10 +56,10 @@ export default function Navbar() {
                 <Camera size={20} className="text-white" />
               </div>
               <div className="flex flex-col leading-tight">
-                <span className={`font-script text-xl transition-colors duration-300 ${scrolled ? 'text-gold-600' : 'text-gold-300'}`}>
+                <span className={`font-script text-xl transition-colors duration-300 ${showSolidNav ? 'text-gold-600' : 'text-gold-300'}`}>
                   DJ Photography
                 </span>
-                <span className={`font-sans text-xs tracking-[0.2em] uppercase transition-colors duration-300 ${scrolled ? 'text-stone-500' : 'text-cream-200'}`}>
+                <span className={`font-sans text-xs tracking-[0.2em] uppercase transition-colors duration-300 ${showSolidNav ? 'text-stone-500' : 'text-cream-200'}`}>
                   Karaikudi
                 </span>
               </div>
@@ -72,7 +73,7 @@ export default function Navbar() {
                   to={link.to}
                   onClick={() => handleNavClick(link.to)}
                   className={`font-sans text-sm tracking-widest uppercase font-medium transition-colors duration-300 relative group ${
-                    scrolled ? 'text-stone-700 hover:text-gold-600' : 'text-cream-100 hover:text-gold-300'
+                    showSolidNav ? 'text-stone-700 hover:text-gold-600' : 'text-cream-100 hover:text-gold-300'
                   }`}
                 >
                   {link.label}
@@ -92,7 +93,7 @@ export default function Navbar() {
             {/* Mobile Toggle */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className={`md:hidden p-2 rounded-lg transition-colors ${scrolled ? 'text-stone-700' : 'text-white'}`}
+              className={`md:hidden p-2 rounded-lg transition-colors ${showSolidNav ? 'text-stone-700' : 'text-white'}`}
               aria-label="Toggle menu"
             >
               {mobileOpen ? <X size={24} /> : <Menu size={24} />}
@@ -105,46 +106,53 @@ export default function Navbar() {
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-40 bg-white/98 backdrop-blur-lg pt-20 flex flex-col"
+            initial={{ opacity: 0, x: '100%' }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed inset-0 z-[60] md:hidden"
           >
-            <div className="flex flex-col items-center justify-center flex-1 gap-8 px-6">
-              {navLinks.map((link, i) => (
-                <motion.div
-                  key={link.label}
-                  initial={{ opacity: 0, x: -30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.08 }}
+            {/* Overlay */}
+            <div
+              className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm"
+              onClick={() => setMobileOpen(false)}
+            />
+
+            {/* Sidebar */}
+            <div className="absolute top-0 right-0 bottom-0 w-[80%] max-w-sm bg-white shadow-2xl flex flex-col">
+              <div className="p-6 flex items-center justify-between border-b border-stone-100">
+                <span className="font-serif text-xl text-stone-800">Menu</span>
+                <button
+                  onClick={() => setMobileOpen(false)}
+                  className="p-2 text-stone-400 hover:text-stone-600 transition-colors"
                 >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto py-8 px-6 space-y-6">
+                {navLinks.map((link) => (
                   <Link
+                    key={link.label}
                     to={link.to}
                     onClick={() => handleNavClick(link.to)}
-                    className="font-serif text-3xl font-light text-stone-800 hover:text-gold-600 transition-colors"
+                    className="block font-sans text-lg tracking-widest uppercase text-stone-600 hover:text-gold-600 transition-colors border-b border-stone-50 pb-2"
                   >
                     {link.label}
                   </Link>
-                </motion.div>
-              ))}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-              >
+                ))}
+              </div>
+
+              <div className="p-8 border-t border-stone-100">
                 <a
                   href="https://wa.me/918825605403"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn-whatsapp"
+                  className="w-full btn-gold py-4 text-center block"
                 >
-                  Book on WhatsApp
+                  Book Your Session
                 </a>
-              </motion.div>
-            </div>
-            <div className="pb-8 text-center">
-              <p className="font-script text-gold-500 text-xl">DJ Photography – Karaikudi</p>
+              </div>
             </div>
           </motion.div>
         )}
