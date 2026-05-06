@@ -617,22 +617,12 @@ function AddEventTab() {
       showToast('error', 'Please fill in the event name');
       return;
     }
-    if (!formData.event_date) {
-      showToast('error', 'Please select the event date');
-      return;
-    }
-    if (!formData.location) {
-      showToast('error', 'Please enter the event location');
-      return;
-    }
 
     setLoading(true);
     try {
       await createEvent({
         ...formData,
         slug: generateSlug(formData.event_name),
-        event_date: '',
-        location: '',
       });
       showToast('success', 'Event created successfully!');
       setFormData({
