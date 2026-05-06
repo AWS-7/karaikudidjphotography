@@ -210,7 +210,7 @@ export async function deleteEvent(id: string) {
 
     // Then delete the event
     // We use .select() to verify that the deletion actually happened
-    const { data: deletedImages, error: imagesDbError } = await supabase
+    const { error: imagesDbError } = await supabase
       .from('gallery_images')
       .delete()
       .eq('event_id', id)
