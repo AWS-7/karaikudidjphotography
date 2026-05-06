@@ -36,7 +36,7 @@ import { useAvailability, updateAvailability, deleteAvailability } from '../hook
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { useImageUpload, deleteImage } from '../hooks/useImages';
 import { useToast } from '../contexts/ToastContext';
-import type { Event, Enquiry, Availability, AboutData } from '../types/database';
+import type { Event, Enquiry, Availability, AboutData, HeroData } from '../types/database';
 import { saveTestimonials, loadTestimonials, type Testimonial } from '../data/testimonials';
 import img1 from '../images/1778054327731.jpg';
 import img2 from '../images/1778054327722.jpg';
@@ -519,7 +519,7 @@ function GalleryTab() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                   {selectedEventImages.images.map((img) => (
                     <div key={img.id} className="relative group aspect-square rounded-lg overflow-hidden border border-stone-100 shadow-sm">
-                      <img src={img.src} alt="" className="w-full h-full object-cover" />
+                      <img src={img.src} alt={img.alt || 'Gallery image'} className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <button
                           onClick={() => handleDeleteImage(img.id, img.storagePath)}
@@ -862,18 +862,9 @@ function PackagesTab() {
 
   const handleEditClick = (pkg: any) => {
     setIsCreating(false);
-    // Extract numeric price from formatted string (e.g., "₹95,000" -> 95000)
-    let numericPrice = 0;
-    if (typeof pkg.price === 'string') {
-      const cleaned = pkg.price.replace(/[^0-9]/g, '');
-      numericPrice = cleaned ? parseInt(cleaned) : 0;
-    } else {
-      numericPrice = pkg.price || 0;
-    }
-
     setEditingPackage({
       ...pkg,
-      price: numericPrice,
+      price: pkg.price,
       cover_image: pkg.coverImage || '',
       // Ensure features is a fresh copy
       features: pkg.features ? JSON.parse(JSON.stringify(pkg.features)) : []
@@ -1043,7 +1034,7 @@ function PackagesTab() {
                 <p className="font-sans text-[10px] text-white/70 tracking-widest uppercase">{pkg.priceNote}</p>
               </div>
               <div className="absolute top-3 right-4">
-                <p className="font-serif text-xl text-gold-300 font-medium">{pkg.price}</p>
+                <p className="font-serif text-xl text-gold-300 font-medium">₹{pkg.price.toLocaleString('en-IN')}</p>
               </div>
             </div>
             
@@ -1300,7 +1291,7 @@ function PackagesTab() {
                   </h3>
                   <div className="flex items-baseline gap-2 mt-1">
                     <span className="font-serif text-xl sm:text-2xl text-gold-300">
-                      {packages[selectedPackage].price}
+                      ₹{packages[selectedPackage].price.toLocaleString('en-IN')}
                     </span>
                     <span className="font-sans text-white/60 text-xs">
                       {packages[selectedPackage].priceNote}
@@ -1365,9 +1356,16 @@ const DEFAULT_HERO: HeroData = {
 
 function HeroTab() {
   const { showToast } = useToast();
-  const { data: heroData, loading, updateSettings } = useSiteSettings<HeroData>('hero_data', DEFAULT_HERO);
+  const { data: serverHeroData, loading, updateSettings } = useSiteSettings<HeroData>('hero_data', DEFAULT_HERO);
+  const [heroData, setHeroData] = useState<HeroData>(DEFAULT_HERO);
   const [uploadingHero, setUploadingHero] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (serverHeroData) {
+      setHeroData(serverHeroData);
+    }
+  }, [serverHeroData]);
 
   const handleUrlChange = (url: string) => {
     let normalizedUrl = url;
@@ -1379,7 +1377,7 @@ function HeroTab() {
       showToast('error', 'Google Photos links are not direct images. Please use the Upload button instead.');
     }
 
-    updateSettings({ 
+    setHeroData({ 
       ...heroData, 
       bgImage: normalizedUrl,
       bgImages: [...(heroData.bgImages || []), normalizedUrl]
@@ -1389,7 +1387,7 @@ function HeroTab() {
   const handleRemoveImage = (index: number) => {
     const currentImages = heroData.bgImages || [];
     const newImages = currentImages.filter((_, i) => i !== index);
-    updateSettings({
+    setHeroData({
       ...heroData,
       bgImages: newImages,
       bgImage: newImages[0] || ''
@@ -1427,7 +1425,9 @@ function HeroTab() {
       }
 
       const newImages = [...(heroData.bgImages || []), ...uploadedUrls];
-      await updateSettings({ ...heroData, bgImages: newImages, bgImage: newImages[0] || heroData.bgImage });
+      const updatedHero = { ...heroData, bgImages: newImages, bgImage: newImages[0] || heroData.bgImage };
+      setHeroData(updatedHero);
+      await updateSettings(updatedHero);
       showToast('success', `${uploadedUrls.length} images uploaded successfully!`);
     } catch (err) {
       showToast('error', 'Failed to upload images');
@@ -1482,17 +1482,17 @@ function HeroTab() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
             <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Subtitle (Script)</label>
-            <input type="text" value={heroData.subtitle} onChange={(e) => updateSettings({ ...heroData, subtitle: e.target.value })} className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 transition-colors" />
+            <input type="text" value={heroData.subtitle} onChange={(e) => setHeroData({ ...heroData, subtitle: e.target.value })} className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 transition-colors" />
           </div>
           <div>
             <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Tagline</label>
-            <input type="text" value={heroData.tagline} onChange={(e) => updateSettings({ ...heroData, tagline: e.target.value })} className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 transition-colors" />
+            <input type="text" value={heroData.tagline} onChange={(e) => setHeroData({ ...heroData, tagline: e.target.value })} className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 transition-colors" />
           </div>
         </div>
 
         <div>
           <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Main Title</label>
-          <input type="text" value={heroData.title} onChange={(e) => updateSettings({ ...heroData, title: e.target.value })} className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 transition-colors" />
+          <input type="text" value={heroData.title} onChange={(e) => setHeroData({ ...heroData, title: e.target.value })} className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 transition-colors" />
         </div>
 
         <h3 className="font-serif text-lg text-stone-800 border-b border-stone-100 pb-3 pt-2">Stats</h3>
@@ -1504,8 +1504,8 @@ function HeroTab() {
           ].map((stat) => (
             <div key={stat.title} className="space-y-3">
               <label className="font-sans text-xs text-stone-500 font-medium">{stat.title}</label>
-              <input type="text" value={heroData[stat.valueKey as keyof typeof heroData] as string} onChange={(e) => updateSettings({ ...heroData, [stat.valueKey]: e.target.value })} placeholder="Value" className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 transition-colors" />
-              <input type="text" value={heroData[stat.labelKey as keyof typeof heroData] as string} onChange={(e) => updateSettings({ ...heroData, [stat.labelKey]: e.target.value })} placeholder="Label" className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 transition-colors" />
+              <input type="text" value={heroData[stat.valueKey as keyof typeof heroData] as string} onChange={(e) => setHeroData({ ...heroData, [stat.valueKey]: e.target.value })} placeholder="Value" className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 transition-colors" />
+              <input type="text" value={heroData[stat.labelKey as keyof typeof heroData] as string} onChange={(e) => setHeroData({ ...heroData, [stat.labelKey]: e.target.value })} placeholder="Label" className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 focus:outline-none focus:border-gold-400 transition-colors" />
             </div>
           ))}
         </div>
@@ -1540,10 +1540,17 @@ const DEFAULT_ABOUT: AboutData = {
 
 function AboutTab() {
   const { showToast } = useToast();
-  const { data: aboutData, loading, updateSettings } = useSiteSettings<AboutData>('about_data', DEFAULT_ABOUT);
+  const { data: serverAboutData, loading, updateSettings } = useSiteSettings<AboutData>('about_data', DEFAULT_ABOUT);
+  const [aboutData, setAboutData] = useState<AboutData>(DEFAULT_ABOUT);
   const [uploadingAbout, setUploadingAbout] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [newSpecialty, setNewSpecialty] = useState('');
+
+  useEffect(() => {
+    if (serverAboutData) {
+      setAboutData(serverAboutData);
+    }
+  }, [serverAboutData]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1556,7 +1563,9 @@ function AboutTab() {
       const { error: uploadError } = await supabase.storage.from('gallery').upload(storagePath, file, { cacheControl: '3600', upsert: true });
       if (uploadError) throw uploadError;
       const { data: urlData } = supabase.storage.from('gallery').getPublicUrl(storagePath);
-      await updateSettings({ ...aboutData, image: urlData.publicUrl });
+      const updatedAbout = { ...aboutData, image: urlData.publicUrl };
+      setAboutData(updatedAbout);
+      await updateSettings(updatedAbout);
       showToast('success', 'Profile image uploaded successfully!');
     } catch (err) {
       showToast('error', 'Failed to upload image');
@@ -1576,12 +1585,12 @@ function AboutTab() {
 
   const addSpecialty = () => {
     if (!newSpecialty.trim()) return;
-    updateSettings({ ...aboutData, specialties: [...aboutData.specialties, newSpecialty.trim()] });
+    setAboutData({ ...aboutData, specialties: [...aboutData.specialties, newSpecialty.trim()] });
     setNewSpecialty('');
   };
 
   const removeSpecialty = (index: number) => {
-    updateSettings({ ...aboutData, specialties: aboutData.specialties.filter((_, i) => i !== index) });
+    setAboutData({ ...aboutData, specialties: aboutData.specialties.filter((_, i) => i !== index) });
   };
 
   if (loading) return <div className="flex items-center justify-center py-20"><Loader2 size={40} className="text-gold-500 animate-spin" /></div>;
@@ -1607,16 +1616,16 @@ function AboutTab() {
             <div className="space-y-4 pt-2">
               <div>
                 <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-1.5 block">Photographer Name</label>
-                <input type="text" value={aboutData.name} onChange={(e) => updateSettings({ ...aboutData, name: e.target.value })} className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm font-sans" />
+                <input type="text" value={aboutData.name} onChange={(e) => setAboutData({ ...aboutData, name: e.target.value })} className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm font-sans" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-1.5 block">Since (Year)</label>
-                  <input type="text" value={aboutData.since} onChange={(e) => updateSettings({ ...aboutData, since: e.target.value })} className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm font-sans" />
+                  <input type="text" value={aboutData.since} onChange={(e) => setAboutData({ ...aboutData, since: e.target.value })} className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm font-sans" />
                 </div>
                 <div>
                   <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-1.5 block">Location</label>
-                  <input type="text" value={aboutData.location} onChange={(e) => updateSettings({ ...aboutData, location: e.target.value })} className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm font-sans" />
+                  <input type="text" value={aboutData.location} onChange={(e) => setAboutData({ ...aboutData, location: e.target.value })} className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm font-sans" />
                 </div>
               </div>
             </div>
@@ -1626,8 +1635,8 @@ function AboutTab() {
             <div className="space-y-4">
               {aboutData.stats.map((stat, idx) => (
                 <div key={idx} className="grid grid-cols-2 gap-2">
-                  <input type="text" value={stat.value} onChange={(e) => { const newStats = [...aboutData.stats]; newStats[idx].value = e.target.value; updateSettings({ ...aboutData, stats: newStats }); }} placeholder="Value" className="border border-stone-200 rounded-lg px-3 py-2 text-sm font-sans" />
-                  <input type="text" value={stat.label} onChange={(e) => { const newStats = [...aboutData.stats]; newStats[idx].label = e.target.value; updateSettings({ ...aboutData, stats: newStats }); }} placeholder="Label" className="border border-stone-200 rounded-lg px-3 py-2 text-sm font-sans" />
+                  <input type="text" value={stat.value} onChange={(e) => { const newStats = [...aboutData.stats]; newStats[idx].value = e.target.value; setAboutData({ ...aboutData, stats: newStats }); }} placeholder="Value" className="border border-stone-200 rounded-lg px-3 py-2 text-sm font-sans" />
+                  <input type="text" value={stat.label} onChange={(e) => { const newStats = [...aboutData.stats]; newStats[idx].label = e.target.value; setAboutData({ ...aboutData, stats: newStats }); }} placeholder="Label" className="border border-stone-200 rounded-lg px-3 py-2 text-sm font-sans" />
                 </div>
               ))}
             </div>
@@ -1638,19 +1647,19 @@ function AboutTab() {
             <h3 className="font-serif text-lg text-stone-800 border-b border-stone-100 pb-3">Biography</h3>
             <div>
               <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Heading Subtitle</label>
-              <input type="text" value={aboutData.subtitle} onChange={(e) => updateSettings({ ...aboutData, subtitle: e.target.value })} className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700" />
+              <input type="text" value={aboutData.subtitle} onChange={(e) => setAboutData({ ...aboutData, subtitle: e.target.value })} className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700" />
             </div>
             <div>
               <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Main Heading</label>
-              <input type="text" value={aboutData.title} onChange={(e) => updateSettings({ ...aboutData, title: e.target.value })} className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700" />
+              <input type="text" value={aboutData.title} onChange={(e) => setAboutData({ ...aboutData, title: e.target.value })} className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700" />
             </div>
             <div>
               <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Bio Paragraph 1</label>
-              <textarea value={aboutData.description1} onChange={(e) => updateSettings({ ...aboutData, description1: e.target.value })} rows={4} className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700" />
+              <textarea value={aboutData.description1} onChange={(e) => setAboutData({ ...aboutData, description1: e.target.value })} rows={4} className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700" />
             </div>
             <div>
               <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Bio Paragraph 2</label>
-              <textarea value={aboutData.description2} onChange={(e) => updateSettings({ ...aboutData, description2: e.target.value })} rows={4} className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700" />
+              <textarea value={aboutData.description2} onChange={(e) => setAboutData({ ...aboutData, description2: e.target.value })} rows={4} className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700" />
             </div>
           </div>
           <div className="bg-white rounded-xl border border-stone-200 shadow-sm p-8">

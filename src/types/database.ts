@@ -203,6 +203,20 @@ export interface AboutData {
   stats: Stat[];
 }
 
+export interface HeroData {
+  subtitle: string;
+  title: string;
+  tagline: string;
+  stat1Value: string;
+  stat1Label: string;
+  stat2Value: string;
+  stat2Label: string;
+  stat3Value: string;
+  stat3Label: string;
+  bgImage: string;
+  bgImages: string[];
+}
+
 export interface PackageFeature {
   text: string;
   included: boolean;
@@ -232,7 +246,7 @@ export interface Event {
 export interface PhotographyPackage {
   id: string;
   name: string;
-  price: string;
+  price: number;
   priceNote: string;
   badge?: string;
   popular?: boolean;

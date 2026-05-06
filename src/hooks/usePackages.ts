@@ -23,7 +23,7 @@ export function usePackages() {
       const formattedPackages: PhotographyPackage[] = (data || []).map((pkg: any) => ({
         id: pkg.id,
         name: pkg.name,
-        price: `₹${pkg.price.toLocaleString('en-IN')}`,
+        price: pkg.price,
         priceNote: pkg.price_note || 'Starting price',
         badge: pkg.badge || undefined,
         popular: pkg.popular || false,

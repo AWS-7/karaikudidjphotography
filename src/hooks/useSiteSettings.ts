@@ -56,7 +56,11 @@ export function useSiteSettings<T>(key: 'hero_data' | 'about_data' | 'testimonia
     try {
       const { error } = await supabase
         .from('site_settings')
-        .upsert({ key, value: newValue, updated_at: new Date().toISOString() });
+        .upsert(
+          { key, value: newValue, updated_at: new Date().toISOString() },
+          { onConflict: 'key' }
+        )
+        .select();
 
       if (error) throw error;
       setData(newValue);

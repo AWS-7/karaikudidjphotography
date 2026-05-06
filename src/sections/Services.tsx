@@ -118,7 +118,7 @@ export default function Services() {
                         </h3>
                         <div className="flex items-baseline gap-1">
                           <span className="font-serif text-3xl sm:text-4xl font-light text-gold-300">
-                            {pkg.price}
+                            ₹{pkg.price.toLocaleString('en-IN')}
                           </span>
                           <span className="font-sans text-white/50 text-xs">{pkg.priceNote}</span>
                         </div>

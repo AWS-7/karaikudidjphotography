@@ -87,7 +87,7 @@ export default function PackageDetails() {
                 {pkg.name} <span className="italic text-gold-600">Package</span>
               </h1>
               <div className="flex items-baseline gap-3">
-                <span className="font-serif text-4xl text-gold-600 font-light">{pkg.price}</span>
+                <span className="font-serif text-4xl text-gold-600 font-light">₹{pkg.price.toLocaleString('en-IN')}</span>
                 <span className="font-sans text-stone-400 text-sm tracking-wide">{pkg.priceNote}</span>
               </div>
             </div>
@@ -148,7 +148,7 @@ export default function PackageDetails() {
 
               {/* CTA Button */}
               <a
-                href={`https://wa.me/918825605403?text=Hi%20Dass!%20I'm%20interested%20in%20the%20${pkg.name}%20package%20(${pkg.price}).`}
+                href={`https://wa.me/918825605403?text=Hi%20Dass!%20I'm%20interested%20in%20the%20${pkg.name}%20package%20(₹${pkg.price.toLocaleString('en-IN')}).`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-12 w-full flex items-center justify-center gap-3 py-5 rounded-2xl font-sans text-base font-bold tracking-[0.1em] uppercase bg-gold-500 text-white hover:bg-gold-600 hover:shadow-2xl hover:shadow-gold-500/40 transition-all duration-500 transform hover:-translate-y-1"
