@@ -1719,6 +1719,7 @@ function ReviewsTab() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!confirm('Delete this review?')) return;
     const updated = reviews.filter((r) => r.id !== id);
     try {
       await updateSettings(updated);
@@ -1727,26 +1728,24 @@ function ReviewsTab() {
       showToast('error', 'Failed to delete review');
     }
   };
+
+  const handleEdit = (review: Testimonial) => {
+    setEditingId(review.id);
     setFormData(review);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!editingId) return;
-    const updated = reviews.map(r => r.id === editingId ? { ...r, ...formData } as Testimonial : r);
-    setReviews(updated);
-    saveTestimonials(updated);
-    setEditingId(null);
-    setFormData({ name: '', role: '', location: '', avatar: '', review: '', rating: 5, event: '' });
-    showToast('success', 'Review updated successfully!');
-  };
-
-  const handleDelete = (id: string) => {
-    if (!confirm('Delete this review?')) return;
-    const updated = reviews.filter((r) => r.id !== id);
-    setReviews(updated);
-    saveTestimonials(updated);
-    showToast('success', 'Review deleted');
+    const updated = reviews.map((r) => (r.id === editingId ? ({ ...r, ...formData } as Testimonial) : r));
+    try {
+      await updateSettings(updated);
+      setEditingId(null);
+      setFormData({ name: '', role: '', location: '', avatar: '', review: '', rating: 5, event: '' });
+      showToast('success', 'Review updated successfully!');
+    } catch (err) {
+      showToast('error', 'Failed to update review');
+    }
   };
 
   return (
