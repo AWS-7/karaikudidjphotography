@@ -29,7 +29,11 @@ export function useEvents() {
             .select('id, image_url, storage_path, alt_text')
             .eq('event_id', event.id);
 
-          if (imagesError) throw imagesError;
+          // We don't throw error here to avoid 400 issues if table is empty or has issues
+          // instead we log it and return empty images
+          if (imagesError) {
+            console.warn(`Error fetching images for event ${event.id}:`, imagesError);
+          }
 
           const images: GalleryImage[] = (imagesData || []).map((img: any) => ({
             id: img.id,

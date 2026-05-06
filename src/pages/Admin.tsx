@@ -567,12 +567,15 @@ const DEFAULT_SERVICES_LIST: Service[] = [
 function AddEventTab() {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: services } = useSiteSettings<Service[]>('services_data', DEFAULT_SERVICES_LIST);
   const [formData, setFormData] = useState({
     event_name: '',
     category: 'Wedding Photography',
     description: '',
     cover_image: '',
+    location: '',
   });
 
   const generateSlug = (name: string) => {
@@ -580,6 +583,33 @@ function AddEventTab() {
       .toLowerCase()
       .replace(/[^a-z0-9\s]/g, '')
       .replace(/\s+/g, '-');
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `event_cover_${Date.now()}.${fileExt}`;
+      const storagePath = `covers/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('gallery')
+        .upload(storagePath, file, { cacheControl: '3600', upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from('gallery').getPublicUrl(storagePath);
+      setFormData({ ...formData, cover_image: urlData.publicUrl });
+      showToast('success', 'Cover image uploaded successfully!');
+    } catch (err) {
+      showToast('error', 'Failed to upload cover image');
+      console.error(err);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -601,6 +631,7 @@ function AddEventTab() {
         category: services[0]?.title || 'Wedding Photography',
         description: '',
         cover_image: '',
+        location: '',
       });
     } catch (err) {
       showToast('error', 'Failed to create event');
@@ -645,6 +676,17 @@ function AddEventTab() {
         </div>
 
         <div>
+          <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Location</label>
+          <input
+            type="text"
+            value={formData.location}
+            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+            placeholder="e.g. Karaikudi"
+            className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 placeholder-stone-300 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors"
+          />
+        </div>
+
+        <div>
           <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Event Description</label>
           <textarea
             value={formData.description}
@@ -656,21 +698,49 @@ function AddEventTab() {
         </div>
 
         <div>
-          <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Cover Image URL</label>
-          <input
-            type="url"
-            value={formData.cover_image}
-            onChange={(e) => setFormData({ ...formData, cover_image: e.target.value })}
-            placeholder="https://..."
-            className="w-full border border-stone-200 rounded-lg px-4 py-3 font-sans text-sm text-stone-700 placeholder-stone-300 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-colors"
-          />
-          <p className="font-sans text-xs text-stone-400 mt-1">Leave empty to use a placeholder image</p>
+          <label className="font-sans text-xs text-stone-400 tracking-widest uppercase mb-2 block">Cover Image *</label>
+          <div className="flex gap-4 items-center">
+            {formData.cover_image ? (
+              <div className="w-24 h-24 rounded-lg overflow-hidden border border-stone-200 shadow-sm relative group">
+                <img src={formData.cover_image} alt="Cover" className="w-full h-full object-cover" />
+                <button 
+                  type="button"
+                  onClick={() => setFormData({ ...formData, cover_image: '' })}
+                  className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="w-24 h-24 rounded-lg border-2 border-dashed border-stone-200 flex flex-col items-center justify-center text-stone-400 hover:border-gold-400 hover:text-gold-500 transition-all"
+              >
+                {uploading ? <Loader2 size={24} className="animate-spin" /> : <Upload size={24} />}
+                <span className="text-[10px] mt-1">Upload</span>
+              </button>
+            )}
+            <div className="flex-1">
+              <input 
+                ref={fileInputRef}
+                type="file" 
+                accept="image/*" 
+                onChange={handleFileUpload} 
+                className="hidden" 
+              />
+              <p className="text-xs text-stone-400 font-sans">
+                {formData.cover_image ? 'Image uploaded! You can clear and upload again.' : 'Upload a high-quality cover photo from your device.'}
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="flex gap-3 pt-2">
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || uploading}
             className="btn-gold text-xs px-8 py-3 flex items-center gap-2 disabled:opacity-50"
           >
             {loading ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
@@ -680,9 +750,10 @@ function AddEventTab() {
             type="button"
             onClick={() => setFormData({
               event_name: '',
-              category: 'Wedding',
+              category: services[0]?.title || 'Wedding Photography',
               description: '',
               cover_image: '',
+              location: '',
             })}
             className="btn-outline-gold text-xs px-6 py-3"
           >
