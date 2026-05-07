@@ -107,11 +107,16 @@ export default function Footer() {
 
         {/* Bottom */}
         <div className="py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="font-sans text-stone-500 text-xs tracking-wide">
-            &copy; {year} DJ Photography, Karaikudi. All rights reserved.
-          </p>
-          <p className="font-sans text-stone-500 text-xs flex items-center gap-1">
-            Made with <Heart size={12} className="text-maroon-500 fill-maroon-500" /> for beautiful memories
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <p className="font-sans text-stone-500 text-xs tracking-wide">
+              &copy; {year} DJ Photography, Karaikudi. All rights reserved.
+            </p>
+            <p className="font-sans text-stone-500 text-xs flex items-center gap-1">
+              Made with <Heart size={12} className="text-maroon-500 fill-maroon-500" /> for beautiful memories
+            </p>
+          </div>
+          <p className="font-sans text-stone-500 text-xs">
+            Developed By AWS-Agni Web Solution-9080700642
           </p>
         </div>
       </div>
