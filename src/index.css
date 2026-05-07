@@ -91,3 +91,12 @@
   background: #c8972a;
   border-radius: 3px;
 }
+
+/* Hide scrollbar for admin sidebar */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

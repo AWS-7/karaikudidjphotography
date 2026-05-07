@@ -38,7 +38,7 @@ import { useSiteSettings } from '../hooks/useSiteSettings';
 import { useImageUpload, deleteImage } from '../hooks/useImages';
 import { useToast } from '../contexts/ToastContext';
 import type { Event, Enquiry, Availability, AboutData, HeroData, Service, FontSettings } from '../types/database';
-import { saveTestimonials, loadTestimonials, type Testimonial } from '../data/testimonials';
+import type { Testimonial } from '../data/testimonials';
 import { DEFAULT_FONT_SETTINGS, FONT_FAMILIES } from '../data/fontSettings';
 import img1 from '../images/1778054327731.jpg';
 import img2 from '../images/1778054327722.jpg';
@@ -48,7 +48,7 @@ import logo from '../images/1778058672282-removebg-preview.png';
 
 const packageImages = [img1, img2, img3, img4];
 
-type Tab = 'dashboard' | 'gallery' | 'add-event' | 'categories' | 'upload' | 'packages' | 'services' | 'hero' | 'about' | 'reviews' | 'enquiries' | 'calendar' | 'settings';
+type Tab = 'dashboard' | 'gallery' | 'add-event' | 'categories' | 'upload' | 'packages' | 'services' | 'hero' | 'about' | 'reviews' | 'enquiries' | 'calendar' | 'settings' | 'font-settings';
 
 const navItems: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -185,7 +185,7 @@ export default function Admin() {
             animate={{ x: 0 }}
             exit={{ x: -280 }}
             transition={{ duration: 0.3 }}
-            className="w-64 min-h-screen bg-stone-900 text-white flex flex-col fixed left-0 top-0 z-30 shadow-2xl"
+            className="w-64 h-screen bg-stone-900 text-white flex flex-col fixed left-0 top-0 z-30 shadow-2xl"
           >
             {/* Logo */}
             <div className="px-6 py-7 border-b border-stone-700">
@@ -195,7 +195,7 @@ export default function Admin() {
             </div>
 
             {/* Nav */}
-            <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-6 space-y-1">
+            <nav className="flex-1 min-h-0 overflow-y-scroll px-3 py-6 space-y-1 scrollbar-hide">
               {navItems.map((item) => (
                 <button
                   key={item.id}
@@ -944,7 +944,6 @@ function AddEventTab() {
               category: (categories.length > 0 ? categories[0] : services[0]?.title) || 'Wedding Photography',
               description: '',
               cover_image: '',
-              location: '',
             })}
             className="btn-outline-gold text-xs px-6 py-3"
           >
@@ -959,7 +958,7 @@ function AddEventTab() {
 
 function CategoriesTab() {
   const { showToast } = useToast();
-  const { data: categories = [], updateSettings, loading } = useSiteSettings<string[]>('categories_data', DEFAULT_CATEGORY_LIST);
+  const { data: categories = [], updateSettings } = useSiteSettings<string[]>('categories_data', DEFAULT_CATEGORY_LIST);
   const [newCategory, setNewCategory] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -2182,7 +2181,7 @@ function AboutTab() {
 /* ─────────────── Reviews Tab ─────────────── */
 function ReviewsTab() {
   const { showToast } = useToast();
-  const { data: reviews, loading, updateSettings } = useSiteSettings<Testimonial[]>('testimonials_data', []);
+  const { data: reviews, updateSettings } = useSiteSettings<Testimonial[]>('testimonials_data', []);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Testimonial>>({
     name: '',
