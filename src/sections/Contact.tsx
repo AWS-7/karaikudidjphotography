@@ -109,7 +109,7 @@ export default function Contact() {
                   {
                     icon: MapPin,
                     label: 'Location',
-                    value: 'Karaikudi, Tamil Nadu, India',
+                    value: '41/1, Railway Feeder Rd, near Sathanantha School, Ananda Nagar, Karaikudi, Tamil Nadu 630003',
                     href: undefined,
                   },
                 ].map((item) => (
@@ -160,10 +160,12 @@ export default function Contact() {
                 <div className="absolute inset-0 bg-gradient-to-br from-cream-100 to-cream-200" />
                 <div className="relative z-10 text-center">
                   <MapPin size={32} className="text-gold-500 mx-auto mb-2" />
-                  <p className="font-serif text-stone-600 text-lg">Karaikudi</p>
-                  <p className="font-sans text-stone-400 text-sm">Tamil Nadu, India</p>
+                  <p className="font-serif text-stone-600 text-lg">DJ Photography</p>
+                  <p className="font-sans text-stone-400 text-sm">41/1, Railway Feeder Rd, near Sathanantha School</p>
+                  <p className="font-sans text-stone-400 text-sm">Ananda Nagar, Karaikudi</p>
+                  <p className="font-sans text-stone-400 text-sm">Tamil Nadu 630003</p>
                   <a
-                    href="https://www.google.com/maps/search/Karaikudi"
+                    href="https://www.google.com/maps/search/41/1,+Railway+Feeder+Rd,+near+Sathanantha+School,+Ananda+Nagar,+Karaikudi,+Tamil+Nadu+630003"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-sans text-gold-600 text-xs mt-2 inline-block hover:underline"
